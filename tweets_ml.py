@@ -265,27 +265,27 @@ class BaseClf(BaseEstimator, ClusterMixin):
         # So, when passing the pipeline to multiple classifiers, the objects inside the pipeline are NOT copied
         # This means that if in any other place, a pipeline is created and then fitted(like in the hierarchical CLF) it will override the objects
         # in all other pipelines using this "pipeline_steps" list
-        self.pipeline_steps = copy.deepcopy(self.pipeline_steps)    
+        self._pipeline_steps = copy.deepcopy(self.pipeline_steps)    
     
-        self.vectorizer = Pipeline(self.pipeline_steps)
+        self._vectorizer = Pipeline(self._pipeline_steps)
         
-        X = self.vectorizer.fit_transform(tweets)
+        X = self._vectorizer.fit_transform(tweets)
         print(X.shape)
         
-        self.clf = self.get_clf()
+        self._clf = self.get_clf()
         
-        self.clf.fit(X, labels)
+        self._clf.fit(X, labels)
         
     def predict(self, tweets):
     
-        X = self.vectorizer.transform(tweets)     
+        X = self._vectorizer.transform(tweets)     
             
-        return self.clf.predict(X)
+        return self._clf.predict(X)
         
     def score(self, tweets, labels):
-        X = self.vectorizer.transform(tweets)   
+        X = self._vectorizer.transform(tweets)   
             
-        return self.clf.score(X, labels)
+        return self._clf.score(X, labels)
         
     def get_clf(self):
         raise ValueError("get_clf function must be implemented!")
@@ -314,7 +314,7 @@ class TweetClassifierRF(BaseClf):
     #    super(TweetClassifierLR, self).__init__(pipeline_steps)
                   
     def get_clf(self):
-        return RandomForestClassifier()
+        return RandomForestClassifier(n_estimators=50)
         
 class TweetClassifierBaseSVM(BaseClf):
 
@@ -350,20 +350,20 @@ class TweetClassifierH(BaseEstimator, ClassifierMixin):
         all, related, negative = process_tweets(tweet_list)
         
         
-        self.all_clasifier = self.get_clf(1)(**self.kwargs[1])
-        self.related_clasifier = self.get_clf(2)(**self.kwargs[2])
-        self.negative_clasifier = self.get_clf(3)(**self.kwargs[3])
+        self._all_clasifier = self.get_clf(1)(**self.kwargs[1])
+        self._related_clasifier = self.get_clf(2)(**self.kwargs[2])
+        self._negative_clasifier = self.get_clf(3)(**self.kwargs[3])
         
         print("fittin data...")
 
         print("fittin all...")
-        self.all_clasifier.fit(all[TWEET], all[NORMALIZED_LABEL])
+        self._all_clasifier.fit(all[TWEET], all[NORMALIZED_LABEL])
         
         print("fitting related...")
-        self.related_clasifier.fit(related[TWEET], related[NORMALIZED_LABEL])
+        self._related_clasifier.fit(related[TWEET], related[NORMALIZED_LABEL])
         
         print("fitting negative...")
-        self.negative_clasifier.fit(negative[TWEET], negative[NORMALIZED_LABEL])
+        self._negative_clasifier.fit(negative[TWEET], negative[NORMALIZED_LABEL])
         
         print("finished fitting data!")
         
@@ -378,21 +378,21 @@ class TweetClassifierH(BaseEstimator, ClassifierMixin):
         
         for tweet in tweets:
             # predict with all to get related or unrelated
-            pred = self.all_clasifier.predict([tweet])[0] # the zero is because the classifier return a list with 1 element
+            pred = self._all_clasifier.predict([tweet])[0] # the zero is because the classifier return a list with 1 element
             if pred == UNRELATED:
                 # if its unrelated we are done with this tweet
                 predictions.append(pred)
                 continue
                 
             # if its related try to get next label
-            pred = self.related_clasifier.predict([tweet])[0]
+            pred = self._related_clasifier.predict([tweet])[0]
             if NEG not in pred:
                 # if its not negative we are done with this tweet
                 predictions.append(pred)
                 continue
                 
             # if its negative try to get specific label
-            pred = self.negative_clasifier.predict([tweet])[0]
+            pred = self._negative_clasifier.predict([tweet])[0]
             predictions.append(pred)
             
         return predictions
