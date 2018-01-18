@@ -1,6 +1,7 @@
 from tweet_data_parser import read_tab_sep
 from tweets_ml import build_tokenizer, preprocess
 from tweets_ml import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN
+from tweets_ml import build_pipeline_steps
 
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_validate, cross_val_predict
@@ -84,7 +85,6 @@ if __name__ == "__main__":
     tokenizer = build_tokenizer(do_bigrams=args.bigrams, do_clusters=args.clusters, do_postags=args.postags, 
                                 do_postags_bg=args.postags_bg, do_sentiwords=args.sentiwords, cluster_lookup_file=clusters_path, pos_tag_file=postag_file)
     
-    from tweets_ml import build_pipeline_steps
     pipeline_steps = build_pipeline_steps(tokenizer=tokenizer, preprocess=lambda id_text : preprocess(id_text, alt_pre=args.alt_preprocess), do_length=args.length,
                                     do_tfidf=args.tfidf, do_sentnet=args.sentnet, do_subjscore=args.subjscore, dim_reduction=args.dim_reduction)
    
