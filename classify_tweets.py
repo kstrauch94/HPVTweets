@@ -1,6 +1,6 @@
 from tweet_data_parser import read_tab_sep
 from tweets_ml import build_tokenizer, preprocess
-from tweets_ml import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN
+from tweets_ml import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN, TweetClassifierLR
 from tweets_ml import build_pipeline_steps
 
 from sklearn.model_selection import cross_val_score
@@ -9,11 +9,18 @@ from sklearn.model_selection import cross_validate, cross_val_predict
 from sklearn.metrics import classification_report
 
 import argparse
+import copy
 
-SVM_H = "svm_h"
 SVM_B = "svm_b"
 KNN_B = "knn_b"
+LR_B  = "lr_b"
+
+SVM_H = "svm_h"
 KNN_H = "knn_h"
+
+KNN_2SVM = "knn_2svm"
+
+clf_choices = [SVM_B, KNN_B, LR_B, KNN_H, SVM_H, KNN_2SVM]
 
 C = "C"
 GAMMA = "GAMMA"
@@ -26,7 +33,7 @@ if __name__ == "__main__":
     
     classifier_group = parser.add_argument_group('classifier')
     
-    classifier_group.add_argument("-c", "--classifier", choices=[SVM_H, SVM_B, KNN_B, KNN_H], default=SVM_H, help="Choose classifier")
+    classifier_group.add_argument("-c", "--classifier", choices=clf_choices, default=SVM_H, help="Choose classifier")
     classifier_group.add_argument("--cv-k", type=int, default=3, help="choose k for a k-fold cross validation")
     classifier_group.add_argument("--dim-reduction", type=int, default=-1, help="apply dimensionality reduction to specified value with singular value decomposition (SVD)")
     classifier_group.add_argument("--tfidf", action="store_true", help="apply tfidf to feature vector")
@@ -111,27 +118,41 @@ if __name__ == "__main__":
     #    
     """
     kwargs_pre = {"pipeline_steps": pipeline_steps}
-    kwargs = {1: kwargs_pre, 2: kwargs_pre, 3: kwargs_pre}
+    kwargs = {1: copy.copy(kwargs_pre), 2: copy.copy(kwargs_pre), 3: copy.copy(kwargs_pre)}
     
     
     if args.classifier == SVM_B:
         clf = TweetClassifierBaseSVM(**kwargs_pre)
-        
+    
+    elif args.classifier == KNN_B:
+        kwargs_pre.update({NEIGHBORS: args.neighbors})
+        clf = TweetClassifierKNN(**kwargs_pre)  
+
+    elif args.classifier == LR_B:
+        clf = TweetClassifierLR(**kwargs_pre)        
+    
     elif args.classifier == SVM_H:
         kwargs[1].update({C: all_svm_C, GAMMA: all_svm_gamma})
         kwargs[2].update({C: related_svm_C, GAMMA: related_svm_gamma})
         kwargs[3].update({C: negative_svm_C, GAMMA: negative_svm_gamma})
-        clf = TweetClassifierH(lambda: TweetClassifierBaseSVM, kwargs)
-
-    elif args.classifier == KNN_B:
-        kwargs_pre.update({NEIGHBORS: args.neighbors})
-        clf = TweetClassifierKNN(**kwargs_pre)
+        clf = TweetClassifierH(lambda x: TweetClassifierBaseSVM, kwargs)
         
     elif args.classifier == KNN_H:
         kwargs[1].update({NEIGHBORS: args.neighbors})
         kwargs[2].update({NEIGHBORS: args.neighbors})
         kwargs[3].update({NEIGHBORS: args.neighbors})
-        clf = TweetClassifierH(lambda: TweetClassifierKNN, kwargs)
+        clf = TweetClassifierH(lambda x: TweetClassifierKNN, kwargs)
+
+    elif args.classifier == KNN_2SVM:
+        kwargs[1].update({NEIGHBORS: args.neighbors})
+        kwargs[2].update({C: related_svm_C, GAMMA: related_svm_gamma})
+        kwargs[3].update({C: negative_svm_C, GAMMA: negative_svm_gamma})
+        
+        def get_clf(tier):
+            if tier == 1: return TweetClassifierKNN
+            if tier == 2 or tier == 3: return TweetClassifierBaseSVM
+                
+        clf = TweetClassifierH(get_clf, kwargs)
     
     scoring = ["f1_micro", "f1_macro", "precision_micro", "precision_macro", "recall_micro", "recall_macro"]
     

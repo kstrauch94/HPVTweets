@@ -11,6 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn import svm
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import TruncatedSVD
+from sklearn.linear_model import LogisticRegression
 
 from sklearn.metrics import accuracy_score
 
@@ -296,6 +297,13 @@ class TweetClassifierKNN(BaseClf):
     def get_clf(self):
         return KNeighborsClassifier(self.neighbors)
         
+class TweetClassifierLR(BaseClf):
+
+    #def __init__(self, pipeline_steps):
+    #    super(TweetClassifierLR, self).__init__(pipeline_steps)
+                  
+    def get_clf(self):
+        return LogisticRegression()
         
 class TweetClassifierBaseSVM(BaseClf):
 
@@ -323,9 +331,7 @@ class TweetClassifierH(BaseEstimator, ClassifierMixin):
         self.kwargs = kwargs           
 
     def fit(self, tweets, labels):
-    
-        clf = self.get_clf()
-    
+        
         if self.get_clf is None:
             raise ValueError("A classifier is needed")
         
@@ -333,9 +339,9 @@ class TweetClassifierH(BaseEstimator, ClassifierMixin):
         all, related, negative = process_tweets(tweet_list)
         
         
-        self.all_clasifier = clf(**self.kwargs[1])
-        self.related_clasifier = clf(**self.kwargs[2])
-        self.negative_clasifier = clf(**self.kwargs[3])
+        self.all_clasifier = self.get_clf(1)(**self.kwargs[1])
+        self.related_clasifier = self.get_clf(2)(**self.kwargs[2])
+        self.negative_clasifier = self.get_clf(3)(**self.kwargs[3])
         
         print("fittin data...")
 
