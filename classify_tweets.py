@@ -14,13 +14,14 @@ import copy
 SVM_B = "svm_b"
 KNN_B = "knn_b"
 LR_B  = "lr_b"
+RF_B  = "rf_b"
 
 SVM_H = "svm_h"
 KNN_H = "knn_h"
 
 KNN_2SVM = "knn_2svm"
 
-clf_choices = [SVM_B, KNN_B, LR_B, KNN_H, SVM_H, KNN_2SVM]
+clf_choices = [SVM_B, KNN_B, LR_B, RF_B, KNN_H, SVM_H, KNN_2SVM]
 
 C = "C"
 GAMMA = "GAMMA"
@@ -129,7 +130,10 @@ if __name__ == "__main__":
         clf = TweetClassifierKNN(**kwargs_pre)  
 
     elif args.classifier == LR_B:
-        clf = TweetClassifierLR(**kwargs_pre)        
+        clf = TweetClassifierLR(**kwargs_pre)
+        
+    elif args.classifier == RF_B:
+        clf = TweetClassifierRF(**kwargs_pre)          
     
     elif args.classifier == SVM_H:
         kwargs[1].update({C: all_svm_C, GAMMA: all_svm_gamma})

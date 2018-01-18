@@ -12,6 +12,7 @@ from sklearn import svm
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import TruncatedSVD
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.metrics import accuracy_score
 
@@ -254,15 +255,17 @@ def build_pipeline_steps(tokenizer=None, preprocess=None, do_length=False, do_se
  
 class BaseClf(BaseEstimator, ClusterMixin):
 
-    def __init__(self, pipeline_steps):
+    def __init__(self, pipeline_steps=None):
         
-        # HAVE TO DEEPCOPY HERE. This is because when building the pipeline we already give made objects to it.
+        self.pipeline_steps = pipeline_steps
+		
+    def fit(self, tweets, labels):
+    
+        #HAVE TO DEEPCOPY HERE. This is because when building the pipeline we already give made objects to it.
         # So, when passing the pipeline to multiple classifiers, the objects inside the pipeline are NOT copied
         # This means that if in any other place, a pipeline is created and then fitted(like in the hierarchical CLF) it will override the objects
         # in all other pipelines using this "pipeline_steps" list
-        self.pipeline_steps = copy.deepcopy(pipeline_steps)    
-		
-    def fit(self, tweets, labels):
+        self.pipeline_steps = copy.deepcopy(self.pipeline_steps)    
     
         self.vectorizer = Pipeline(self.pipeline_steps)
         
@@ -289,7 +292,7 @@ class BaseClf(BaseEstimator, ClusterMixin):
         
 class TweetClassifierKNN(BaseClf):
 
-    def __init__(self, pipeline_steps, neighbors=10):
+    def __init__(self, pipeline_steps=None, neighbors=10):
         super(TweetClassifierKNN, self).__init__(pipeline_steps)
           
         self.neighbors=neighbors
@@ -299,15 +302,23 @@ class TweetClassifierKNN(BaseClf):
         
 class TweetClassifierLR(BaseClf):
 
-    #def __init__(self, pipeline_steps):
+    #def __init__(self, pipeline_steps=None):
     #    super(TweetClassifierLR, self).__init__(pipeline_steps)
                   
     def get_clf(self):
         return LogisticRegression()
         
+class TweetClassifierRF(BaseClf):
+
+    #def __init__(self, pipeline_steps=None):
+    #    super(TweetClassifierLR, self).__init__(pipeline_steps)
+                  
+    def get_clf(self):
+        return RandomForestClassifier()
+        
 class TweetClassifierBaseSVM(BaseClf):
 
-    def __init__(self, pipeline_steps, C=256, GAMMA=0.00002):
+    def __init__(self, pipeline_steps=None, C=256, GAMMA=0.00002):
         super(TweetClassifierBaseSVM, self).__init__(pipeline_steps)
         
         self.C = C
