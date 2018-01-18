@@ -1,0 +1,234 @@
+Using TensorFlow backend.
+2018-01-16 14:39:31,041 : INFO : load: Loading data from `./data/dataset/P3_vaccine-twitter-data.tsv` - Annotations stored in `./data/dataset/TweetsAnnotation.txt`
+2018-01-16 14:39:45,040 : INFO : utils: Function 'load' took :  14.00s
+2018-01-16 14:39:45,297 : INFO : main: Apply preprocessing to data as in `Du et al. 2017`...
+2018-01-16 14:39:45,685 : INFO : main: Apply preprocessing without Spell Checker...
+2018-01-16 14:39:46,208 : INFO : main: Computed PoS matrix - Resulting shape : (4636, 21)
+2018-01-16 14:39:54,695 : INFO : main: Computed Twitter Clusters matrix - Resulting shape : (4636, 957)
+2018-01-16 14:39:55,049 : INFO : main: Computed uni/bigram matrix - Resulting shape : (4636, 36971)
+2018-01-16 14:39:55,067 : INFO : main: Concatenated features original - Resulting shape : (4636, 37949)
+2018-01-16 14:40:22,625 : INFO : main: Computed Truncated SVD - Resulting shape : (4636, 300)
+2018-01-16 14:40:22,636 : INFO : main: Encoding labels for hierarchical task...
+2018-01-16 14:40:22,656 : INFO : main: {} CV - Plain SVM linear kernel - LSA features...
+2018-01-16 14:40:22,658 : INFO : classification: Starting Cross Validation process...
+2018-01-16 14:40:22,668 : INFO : classification: Fold 0
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:23,935 : INFO : classification: Fold 1
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:24,958 : INFO : classification: Fold 2
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:25,958 : INFO : classification: Fold 3
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:26,924 : INFO : classification: Fold 4
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:27,892 : INFO : classification: Fold 5
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:28,864 : INFO : classification: Fold 6
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:29,853 : INFO : classification: Fold 7
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:30,845 : INFO : classification: Fold 8
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:31,842 : INFO : classification: Fold 9
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:33,204 : INFO : classification: By class mean scores  :
+                     F1         P         R
+NegCost       0.000000  0.000000  0.000000
+NegEfficacy   0.070000  0.044444  0.200000
+NegOthers     0.383737  0.271177  0.676932
+NegResistant  0.000000  0.000000  0.000000
+NegSafety     0.746120  0.731582  0.765677
+Neutral       0.576070  0.563477  0.590377
+Positive      0.685061  0.676328  0.695697
+Unrelated     0.803484  0.906667  0.722304
+2018-01-16 14:40:33,263 : INFO : classification: 10 fold CV micro average - P : 0.6902398152975349 - R : 0.6902398152975349 - F1 : 0.6902398152975349
+2018-01-16 14:40:33,264 : INFO : classification: 10 fold CV macro average - P : 0.5224606918616675 - R : 0.5979404904657517 - F1 : 0.5340626419418222
+2018-01-16 14:40:33,264 : INFO : main: 10 CV - Hierarchical SVM RBF kernel - reference features
+2018-01-16 14:40:33,272 : INFO : classification: Starting Cross Validation process...
+2018-01-16 14:40:33,413 : INFO : classification: Fold 0
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:43,042 : INFO : classification: Fold 1
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:40:52,135 : INFO : classification: Fold 2
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:41:01,354 : INFO : classification: Fold 3
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:41:10,561 : INFO : classification: Fold 4
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:41:20,145 : INFO : classification: Fold 5
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:41:29,406 : INFO : classification: Fold 6
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:41:38,839 : INFO : classification: Fold 7
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:41:48,447 : INFO : classification: Fold 8
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:41:57,855 : INFO : classification: Fold 9
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:07,054 : INFO : classification: By class mean scores  :
+                     F1         P         R
+NegCost       0.166667  0.150000  0.200000
+NegEfficacy   0.292727  0.231111  0.505000
+NegOthers     0.468514  0.441448  0.508986
+NegResistant  0.000000  0.000000  0.000000
+NegSafety     0.744557  0.792975  0.704837
+Neutral       0.640343  0.664151  0.620377
+Positive      0.724424  0.702189  0.748889
+Unrelated     0.829896  0.822498  0.838781
+2018-01-16 14:42:07,055 : INFO : classification: 10 fold CV micro average - P : 0.7189371229611977 - R : 0.7189371229611977 - F1 : 0.7189371229611977
+2018-01-16 14:42:07,055 : INFO : classification: 10 fold CV macro average - P : 0.6148712526318053 - R : 0.6648094254235517 - F1 : 0.6239515934825565
+2018-01-16 14:42:07,055 : INFO : main: 10 CV - Hierarchical SVMs linear kernel - LSA features
+2018-01-16 14:42:07,058 : INFO : classification: Starting Cross Validation process...
+2018-01-16 14:42:07,063 : INFO : classification: Fold 0
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:07,812 : INFO : classification: Fold 1
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:08,552 : INFO : classification: Fold 2
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:09,302 : INFO : classification: Fold 3
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:10,039 : INFO : classification: Fold 4
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:10,784 : INFO : classification: Fold 5
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:11,513 : INFO : classification: Fold 6
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:12,251 : INFO : classification: Fold 7
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:12,990 : INFO : classification: Fold 8
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:13,720 : INFO : classification: Fold 9
+
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 14:42:14,462 : INFO : classification: By class mean scores  :
+                     F1         P         R
+NegCost       0.000000  0.000000  0.000000
+NegEfficacy   0.145238  0.100000  0.300000
+NegOthers     0.420586  0.376163  0.491559
+NegResistant  0.000000  0.000000  0.000000
+NegSafety     0.710791  0.790511  0.649615
+Neutral       0.574876  0.586269  0.564855
+Positive      0.685007  0.680377  0.690521
+Unrelated     0.809979  0.791208  0.830509
+2018-01-16 14:42:14,462 : INFO : classification: 10 fold CV micro average - P : 0.67902500558576 - R : 0.67902500558576 - F1 : 0.67902500558576
+2018-01-16 14:42:14,462 : INFO : classification: 10 fold CV macro average - P : 0.5361575878100235 - R : 0.5661620362316401 - F1 : 0.5395406633382219
+<class 'pandas.core.frame.DataFrame'>
+Index: 4636 entries, 621412629727322112 to 633335071777402882
+Data columns (total 2 columns):
+words    4636 non-null object
+label    4636 non-null object
+dtypes: object(2)
+memory usage: 108.7+ KB

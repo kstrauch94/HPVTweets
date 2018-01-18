@@ -1,0 +1,134 @@
+Using TensorFlow backend.
+2018-01-16 13:05:40,118 : INFO : load: Loading data from `./data/dataset/P3_vaccine-twitter-data.tsv` - Annotations stored in `./data/dataset/TweetsAnnotation.txt`
+2018-01-16 13:05:58,743 : INFO : utils: Function 'load' took :  18.63s
+2018-01-16 13:05:59,178 : INFO : main: Apply preprocessing without Spell Checker...
+2018-01-16 13:05:59,575 : INFO : main: Encoding labels as one-hot vectors for CNN...
+2018-01-16 13:05:59,577 : INFO : main: Encoding labels for multilabel CNN...
+2018-01-16 13:05:59,727 : INFO : main: Initialiazing CNN architecture for multiclass classification task...
+2018-01-16 13:06:38,817 : INFO : utils: Function 'init_model' took :  39.06s
+2018-01-16 13:06:41.213991: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX
+2018-01-16 13:06:42,131 : INFO : main: Initialiazing CNN architecture for multilabel classification task...
+2018-01-16 13:06:42,679 : INFO : main: 10 CV - Multiclass CNN
+2018-01-16 13:06:42,690 : INFO : classification: Starting Cross Validation process...
+2018-01-16 13:06:42,698 : INFO : classification: Fold 0
+
+2018-01-16 13:07:31,633 : INFO : utils: Function 'fit' took :  48.75s
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1135: UndefinedMetricWarning: Precision and F-score are ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+/usr/local/lib/python3.5/dist-packages/sklearn/metrics/classification.py:1137: UndefinedMetricWarning: Recall and F-score are ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+2018-01-16 13:07:31,851 : INFO : classification: Fold 1
+
+2018-01-16 13:08:21,071 : INFO : utils: Function 'fit' took :  48.91s
+2018-01-16 13:08:21,192 : INFO : classification: Fold 2
+
+2018-01-16 13:09:09,698 : INFO : utils: Function 'fit' took :  48.20s
+2018-01-16 13:09:09,840 : INFO : classification: Fold 3
+
+2018-01-16 13:09:58,834 : INFO : utils: Function 'fit' took :  48.61s
+2018-01-16 13:09:58,997 : INFO : classification: Fold 4
+
+2018-01-16 13:10:48,063 : INFO : utils: Function 'fit' took :  48.58s
+2018-01-16 13:10:48,256 : INFO : classification: Fold 5
+
+2018-01-16 13:11:37,567 : INFO : utils: Function 'fit' took :  48.76s
+2018-01-16 13:11:37,787 : INFO : classification: Fold 6
+
+2018-01-16 13:12:27,246 : INFO : utils: Function 'fit' took :  48.81s
+2018-01-16 13:12:27,487 : INFO : classification: Fold 7
+
+2018-01-16 13:13:17,130 : INFO : utils: Function 'fit' took :  48.94s
+2018-01-16 13:13:17,384 : INFO : classification: Fold 8
+
+2018-01-16 13:14:04,958 : INFO : utils: Function 'fit' took :  46.76s
+2018-01-16 13:14:05,234 : INFO : classification: Fold 9
+
+2018-01-16 13:14:53,127 : INFO : utils: Function 'fit' took :  47.04s
+2018-01-16 13:14:53,950 : INFO : classification: By class mean scores  :
+                     F1         P         R
+NegCost       0.000000  0.000000  0.000000
+NegEfficacy   0.099341  0.075000  0.228571
+NegOthers     0.391965  0.343273  0.500140
+NegResistant  0.000000  0.000000  0.000000
+NegSafety     0.754438  0.766684  0.745718
+Neutral       0.597513  0.628876  0.576069
+Positive      0.686901  0.681258  0.698271
+Unrelated     0.778833  0.789777  0.772612
+2018-01-16 13:14:53,951 : INFO : classification: 10 fold CV micro average - P : 0.6811899530796157 - R : 0.6811899530796157 - F1 : 0.6811899530796157
+2018-01-16 13:14:53,951 : INFO : classification: 10 fold CV macro average - P : 0.41060855073630365 - R : 0.4401727554523839 - F1 : 0.4136239865548582
+2018-01-16 13:14:53,952 : INFO : main: 10 CV - Multilabel CNN
+2018-01-16 13:14:53,955 : INFO : classification: Starting Cross Validation process...
+2018-01-16 13:14:53,958 : INFO : classification: Fold 0
+
+2018-01-16 13:15:36,662 : INFO : utils: Function 'fit' took :  41.77s
+2018-01-16 13:15:37,040 : INFO : classification: Fold 1
+
+2018-01-16 13:16:19,630 : INFO : utils: Function 'fit' took :  41.49s
+2018-01-16 13:16:19,986 : INFO : classification: Fold 2
+
+2018-01-16 13:17:02,884 : INFO : utils: Function 'fit' took :  41.81s
+2018-01-16 13:17:03,263 : INFO : classification: Fold 3
+
+2018-01-16 13:17:46,084 : INFO : utils: Function 'fit' took :  41.64s
+2018-01-16 13:17:46,489 : INFO : classification: Fold 4
+
+2018-01-16 13:18:29,911 : INFO : utils: Function 'fit' took :  42.19s
+2018-01-16 13:18:30,351 : INFO : classification: Fold 5
+
+2018-01-16 13:19:13,322 : INFO : utils: Function 'fit' took :  41.75s
+2018-01-16 13:19:13,776 : INFO : classification: Fold 6
+
+2018-01-16 13:19:57,176 : INFO : utils: Function 'fit' took :  42.00s
+2018-01-16 13:19:57,682 : INFO : classification: Fold 7
+
+2018-01-16 13:20:41,093 : INFO : utils: Function 'fit' took :  42.02s
+2018-01-16 13:20:41,663 : INFO : classification: Fold 8
+
+2018-01-16 13:21:25,310 : INFO : utils: Function 'fit' took :  42.11s
+2018-01-16 13:21:25,809 : INFO : classification: Fold 9
+
+2018-01-16 13:22:09,830 : INFO : utils: Function 'fit' took :  42.23s
+2018-01-16 13:22:10,484 : INFO : classification: By class mean scores  :
+                     F1         P         R
+NegCost       0.000000  0.000000  0.000000
+NegEfficacy   0.000000  0.000000  0.000000
+NegOthers     0.765650  0.724014  0.816242
+NegResistant  0.534788  0.486643  0.628429
+NegSafety     0.237658  0.153043  0.744467
+Neutral       0.684229  0.609467  0.789221
+Positive      0.915133  0.930661  0.901078
+Unrelated     0.000000  0.000000  0.000000
+2018-01-16 13:22:10,484 : INFO : classification: 10 fold CV micro average - P : 0.7316241093245673 - R : 0.8284966780178941 - F1 : 0.7768463933963107
+2018-01-16 13:22:10,485 : INFO : classification: 10 fold CV macro average - P : 0.43383049984539096 - R : 0.5564091659900756 - F1 : 0.46791000086622125
+<class 'pandas.core.frame.DataFrame'>
+Index: 4636 entries, 621412629727322112 to 633335071777402882
+Data columns (total 2 columns):
+words    4636 non-null object
+label    4636 non-null object
+dtypes: object(2)
+memory usage: 108.7+ KB
+Created word2index
+Padded sentences
+Created embedding matrix
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
+Define architecture
