@@ -258,7 +258,7 @@ class BaseClf(BaseEstimator, ClusterMixin):
     def __init__(self, pipeline_steps=None):
         
         self.pipeline_steps = pipeline_steps
-		
+        
     def fit(self, tweets, labels):
     
         #HAVE TO DEEPCOPY HERE. This is because when building the pipeline we already give made objects to it.
@@ -302,11 +302,13 @@ class TweetClassifierKNN(BaseClf):
         
 class TweetClassifierLR(BaseClf):
 
-    #def __init__(self, pipeline_steps=None):
-    #    super(TweetClassifierLR, self).__init__(pipeline_steps)
+    def __init__(self, pipeline_steps=None, C=1.0, tol=1e-4):
+        super(TweetClassifierLR, self).__init__(pipeline_steps)
                   
+        self.C = C
+        self.tol=tol
     def get_clf(self):
-        return LogisticRegression()
+        return LogisticRegression(C=self.C, tol=self.tol)
         
 class TweetClassifierRF(BaseClf):
 

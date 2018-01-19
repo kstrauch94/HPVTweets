@@ -10,6 +10,8 @@ from sklearn.metrics import classification_report
 
 import argparse
 import copy
+import sys
+
 
 SVM_B = "svm_b"
 KNN_B = "knn_b"
@@ -25,7 +27,10 @@ KNN_2SVM = "knn_2svm"
 LR_2SVM  = "lr_2svm"
 LR_SVM_LR= "lr_svm_lr"
 
-clf_choices = [SVM_B, KNN_B, LR_B, RF_B, KNN_H, SVM_H, LR_H, RF_H, KNN_2SVM, LR_2SVM, LR_SVM_LR]
+
+CV = "cv"
+
+clf_choices = [SVM_B, KNN_B, LR_B, RF_B, KNN_H, SVM_H, LR_H, RF_H, KNN_2SVM, LR_2SVM, LR_SVM_LR, CV]
 
 C = "C"
 GAMMA = "GAMMA"
@@ -117,7 +122,6 @@ if __name__ == "__main__":
     from tweets_ml import sub_score
     print sub_score([tweet, tweet2])
     
-    import sys
     sys.exit()   
     
     #    
@@ -196,7 +200,47 @@ if __name__ == "__main__":
             if tier == 3: return TweetClassifierLR
                 
         clf = TweetClassifierH(get_clf, kwargs)
+        
+    elif args.classifier == CV:
     
+        from sklearn.model_selection import GridSearchCV
+        
+        kwargs[1].update({C: all_svm_C, GAMMA: all_svm_gamma})
+        kwargs[2].update({C: related_svm_C, GAMMA: related_svm_gamma})
+        kwargs[3].update({C: negative_svm_C, GAMMA: negative_svm_gamma})
+        
+        kwargs_list = []
+        for newC in [64,128,256,512,1024]: # this loop creates the list of arguments for the classifier.
+            copied_arg = copy.deepcopy(kwargs)# first copy the actual argument
+            copied_arg[1].update({C: newC})   # change the C value of the first SVM to the one to test
+            kwargs_list.append(copied_arg)    # add to list
+        
+        params = {"kwargs": kwargs_list} # now create the parameter "grid"                                     
+        
+        clf = GridSearchCV(TweetClassifierH(lambda x: TweetClassifierBaseSVM, kwargs), params, cv=args.cv_k)
+        
+        clf.fit(tweets, labels)
+        
+        print(clf.cv_results_)
+        
+        
+        """
+        # search for logistic regression best params. Default params are best
+        
+        params = {"C": [0.01,1,10], "tol": [1e-2, 1e-3, 1e-4, 1e-5, 1e-6]}
+        
+        clf = GridSearchCV(TweetClassifierLR(**kwargs_pre), params, cv=args.cv_k)
+        
+        clf.fit(tweets, labels)
+        
+        print(clf.cv_results_)
+        
+        print("mean test score", clf.cv_results_["mean_test_score"])
+        print(clf.best_estimator_)
+        print(clf.best_params_)
+        """
+        
+        sys.exit()
     scoring = ["f1_micro", "f1_macro", "precision_micro", "precision_macro", "recall_micro", "recall_macro"]
     
     f1_scores = cross_validate(clf, tweets, labels, cv=args.cv_k, scoring=scoring, return_train_score=False)
