@@ -17,6 +17,8 @@ from sklearn.preprocessing import LabelEncoder,MultiLabelBinarizer #,LabelBinari
 from sklearn.model_selection import KFold
 from sklearn.metrics import precision_recall_fscore_support as prfs
 from collections import OrderedDict
+from sklearn.model_selection import GridSearchCV,ShuffleSplit
+
 
 
 logger = logging.getLogger(__name__)
@@ -255,7 +257,72 @@ def kfold_cross_validation(clf,X,y,k,sorted_labels_name,estimator = 'keras',verb
     
     
     
+def optimize_hier_hp(clfs,data_sets,params,random_state):
+  """
+  Optimize classifiers in a hierarchial task (one classifier for each class hierarchy).
+  
+  :params:
+    clfs (list) : list of sklearn classifiers
+    data_set (dict) : dict of data ordered by level (iterable containing features and labels). E.g.
     
+    {'0' : [X_all,y_all], '1' : [X_pos_neg,y_pos_neg] , '2' : [X_neg,y_neg]}
+    
+    params (dict) : dict of list of dictionaries containing as key a parameter name and as value a list of possible parameters values. E.g. 
+      
+    {'0' : [{'C' : [1,10,100]},{'gamma' : [2e-3,2e-4,2e-5]}], 
+    '1' : [{'C' : [1,10,100]},{'gamma' : [2e-3,2e-4,2e-5]}],
+    '2' : [{'C' : [1,10,100]}]}
+    
+     random_state (int) : random seed for repruducibility
+     
+  :returns:
+    clfs (list) : optimized sklearn classifiers
+    
+  """
+  
+  assert len(data_sets) == len(clfs) == len(params), "Number of classifiers,data sets and by clssifier parameters must match!"
+  
+  for idx,clf in enumerate(clfs):
+    X,y = data_sets[str(idx)][0],data_sets[str(idx)][1]
+    clf = optimize_hp(clf,X,y,params[str(idx)],random_state)
+    
+  return clfs
+    
+def optimize_hp(clf,X,y,params,random_state):
+  """
+  Optimize one classifier parameter at time. For each parameter:
+    - performs grid search (with train-test split for avoid training too many models), find best parameter value w.r.t. magro averaged f1 score
+    - instantiate new classifier with the found best parameter
+    - repeat
+    
+  :params:
+    
+    clf (sklearn classifier) : classifier to be optimized
+    X (scipy.sparse.csr_matrix or np.ndarray) : feature matrix
+    y ( np.ndarray) : labels vector
+    params (list) : list of dictionaries containing as key a parameter name and as value a list of possible parameters values. E.g.
+    params = [{'C' : [1,10,100]},{'gamma' : [2e-3,2e-4,2e-5]}]
+    random_state (int) : random seed for repruducibility
+    
+   :returns:
+     clf (sklearn classifier) : optimized classifier
+  """
+  
+  rs = ShuffleSplit(n_splits=1, test_size=.33, random_state=random_state)
+
+  for param in params:
+    
+    gs = GridSearchCV(clf,param,refit = False,cv = rs, scoring = 'f1_macro')  
+    gs.fit(X,y)
+    searched_param = list(param.keys())[0]
+    best_value = gs.best_params_[searched_param]
+    print("Best value for {} : {}".format(searched_param,best_value))
+    print("Best esitmator : {}".format(gs.best_estimator_))
+    print("Best parameters : {}".format(gs.best_params_))
+    print("Best scores : {}".format(gs.best_score_))
+    clf.set_params(**{searched_param : best_value})
+    
+  return clf   
     
     
   
