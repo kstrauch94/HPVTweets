@@ -82,7 +82,7 @@ def parse_arguments():
   
   files_group.add_argument("--tweets-file", default="Data\\tweet_for_dp.txt.predict", 
                               help="path to file containing tweet (dependecy parsing applied). Default = Data\merged_tweets.tsv")
-  files_group.add_argument("--annotations", required = True,
+  files_group.add_argument("--annotations", default="Data\\TweetsAnnotation.txt",
                               help="path to file containing tweet annotations")
   files_group.add_argument("--clusters-file", default="Data\\tweet_word_clusters.txt", 
                               help="path to file containing word clusters. Default = Data\\tweet_word_clusters.txt")                     
@@ -100,9 +100,9 @@ if __name__ == "__main__":
     df = load_data(dep_file = args.tweets_file, annotations = args.annotations)
     
     # replace column of tokens with preprocessed ones 
-    df['toks'] = df['toks_pos'].apply(preprocessing,rm_url = True, red_len = True, lower = True, rm_sw = False) 
+    df['toks'] = df['toks_pos'].apply(preprocessing,rm_url = False, red_len = True, lower = True, rm_sw = False, rm_tags_mentions = True)    
     # still dataframe with all columns
-    
+        
     tweets = list(df['toks'])
     pos_tweets = list(zip(list(df["pos"]), tweets))
     labels = list(df['label']) 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     """
     #test
     # leave this :) I'll use this to test the functions
-    print(pos_tweets[:3])
+    #print(pos_tweets[:3])
     #from tweets_feature_extractor import tweets_length
     #print(tweets_length(pos_tweets[:3]))
     
@@ -144,12 +144,13 @@ if __name__ == "__main__":
     #print(sub_score(pos_tweets[:3]))
     
     print("TOK TOK TOK")
+    print(pos_tweets[2])
     print(tokenizer(pos_tweets[2]))
     
     sys.exit()   
     
     #    
-    """
+   #"""
 
     kwargs_pre = {"pipeline_steps": pipeline_steps}
     kwargs = {1: copy.copy(kwargs_pre), 2: copy.copy(kwargs_pre), 3: copy.copy(kwargs_pre)}

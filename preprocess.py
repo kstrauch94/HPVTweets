@@ -96,8 +96,17 @@ def replace_url(tweet):
   
   return [_url_to_string(w) for w in tweet]
 
-
-def preprocessing(tweet, rm_url = True, red_len = True, lower = True, rm_sw = True):
+def delete_hashtags_mentions(tweet):
+  """
+  Remove hashtags and mentions from the tweet
+  
+  :params:
+    tweet (list) : list of tuple (word,pos)
+  """
+  
+  return [w for w in tweet if not w[0].startswith("#") and not w[0].startswith("@")]
+  
+def preprocessing(tweet, rm_url = True, red_len = True, lower = True, rm_sw = True, rm_tags_mentions = True):
   """
   Apply preprocessing to tweet.
   
@@ -122,9 +131,10 @@ def preprocessing(tweet, rm_url = True, red_len = True, lower = True, rm_sw = Tr
     tweet = lowercase_tweet(tweet)
   if rm_sw:
     tweet = rm_stopwords(tweet)
- 
-  return [w[0] for w in tweet]
+  if rm_tags_mentions:
+    tweet = delete_hashtags_mentions(tweet)
     
+  return [w[0] for w in tweet]
 
 if __name__ == "__main__":
   
