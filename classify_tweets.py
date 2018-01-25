@@ -1,8 +1,8 @@
-from load import load_data_complete
+from load import load_data
 from preprocess import preprocessing
-from tweets_feature_extractor import build_tokenizer
-from tweets_feature_extractor import build_pipeline_steps
-from tweets_classification import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN, TweetClassifierLR, TweetClassifierRF
+from tweets_ml import build_tokenizer, preprocess
+from tweets_ml import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN, TweetClassifierLR, TweetClassifierRF
+from tweets_ml import build_pipeline_steps
 
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_validate, cross_val_predict
@@ -38,44 +38,74 @@ GAMMA = "GAMMA"
 
 NEIGHBORS = "neighbors"
 
+def parse_arguments():
+  """
+  Parse arguments via argparse.
+  
+  :return:
+    parsed arguments
+  """
+  
+  parser = argparse.ArgumentParser(description='Tweet classifier architecture')
+  
+  
+  preprcessing_group = parser.add_argument_group('preprocessing')
+  
+  preprcessing_group.add_argument("--rm-url", action="store_false", help="Remove urls from tweet. If not urls will be converted to `url` string")
+  preprcessing_group.add_argument("--red-len", action="store_false", help="Reduce words length. E.g. faaantastic -> fantaastic")
+  preprcessing_group.add_argument("--lower", action="store_false", help="Lowercase all words but emoticons")
+  preprcessing_group.add_argument("--rm-sw", action="store_false", help="Remove stopwords")
+  
+  classifier_group = parser.add_argument_group('classifier')
+  
+  classifier_group.add_argument("-c", "--classifier", choices=clf_choices, default=SVM_H, help="Choose classifier")
+  classifier_group.add_argument("--cv-k", type=int, default=10, help="choose k for a k-fold cross validation")
+  classifier_group.add_argument("--dim-reduction", type=int, default=-1, help="apply dimensionality reduction to specified value with singular value decomposition (SVD)")
+  classifier_group.add_argument("--tfidf", action="store_true", help="apply tfidf to feature vector")
+  classifier_group.add_argument("--neighbors", type=int, default=10, help="Neighbors parameter for KNN classifier")
+  
+  
+  preprocessing_group = parser.add_argument_group('preprocessing')
+  
+  preprocessing_group.add_argument("--alt-preprocess", action="store_true", help="Use alternate preprocessing. This replaces mentions by @ and hashtags by # instead of deleting them.")
+  preprocessing_group.add_argument("--bigrams", action="store_true", help="tokenizer function will build bigrams")
+  preprocessing_group.add_argument("--clusters", action="store_true", help="tokenizer function will build clusters")
+  preprocessing_group.add_argument("--postags", action="store_true", help="tokenizer function will build postags")
+  preprocessing_group.add_argument("--postags-bg", action="store_true", help="tokenizer function will build postags bigrams")
+  preprocessing_group.add_argument("--length", action="store_true", help="Length feature will be added to the vector")
+  preprocessing_group.add_argument("--sentnet", action="store_true", help="Senti net feature will be added to the vector")
+  preprocessing_group.add_argument("--sentiwords", action="store_true", help="tokenizer function will build senti net words")
+  preprocessing_group.add_argument("--subjscore", action="store_true", help="Subjectivity score feature will be added to the vector")
+  
+  
+  files_group = parser.add_argument_group('files')
+  
+  files_group.add_argument("--tweets-file", default="Data\\merged_tweets.tsv", 
+                              help="path to file containing tweet (dependecy parsing applied). Default = Data\merged_tweets.tsv")
+  files_group.add_argument("--annotations", required = True,
+                              help="path to file containing tweet annotations")
+  files_group.add_argument("--clusters-file", default="Data\\tweet_word_clusters.txt", 
+                              help="path to file containing word clusters. Default = Data\\tweet_word_clusters.txt")                     
+                              
+  record_group = parser.add_argument_group('record')
+  
+  record_group.add_argument("--save", action="store_true", help="If true it writes a file with information about the test, else it just prints it")
+  
+  return parser.parse_args()
+
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='Tweet classifier architecture')
+  
+    args = parse_arguments()
     
-    classifier_group = parser.add_argument_group('classifier')
+    df = load_data(dep_file = args.tweets_file, annotations = args.annotations)
     
-    classifier_group.add_argument("-c", "--classifier", choices=clf_choices, default=SVM_H, help="Choose classifier")
-    classifier_group.add_argument("--cv-k", type=int, default=10, help="choose k for a k-fold cross validation")
-    classifier_group.add_argument("--dim-reduction", type=int, default=-1, help="apply dimensionality reduction to specified value with singular value decomposition (SVD)")
-    classifier_group.add_argument("--tfidf", action="store_true", help="apply tfidf to feature vector")
-    classifier_group.add_argument("--neighbors", type=int, default=10, help="Neighbors parameter for KNN classifier")
+    # replace column of tokens with preprocessed ones 
+    df['toks'] = df['toks_pos'].apply(preprocessing,rm_url = True, red_len = True, lower = True, rm_sw = False) 
+    # still dataframe with all columns
     
-    
-    preprocessing_group = parser.add_argument_group('preprocessing')
-    
-    preprocessing_group.add_argument("--alt-preprocess", action="store_true", help="Use alternate preprocessing. This replaces mentions by @ and hashtags by # instead of deleting them.")
-    preprocessing_group.add_argument("--bigrams", action="store_true", help="tokenizer function will build bigrams")
-    preprocessing_group.add_argument("--clusters", action="store_true", help="tokenizer function will build clusters")
-    preprocessing_group.add_argument("--postags", action="store_true", help="tokenizer function will build postags")
-    preprocessing_group.add_argument("--postags-bg", action="store_true", help="tokenizer function will build postags bigrams")
-    preprocessing_group.add_argument("--length", action="store_true", help="Length feature will be added to the vector")
-    preprocessing_group.add_argument("--sentnet", action="store_true", help="Senti net feature will be added to the vector")
-    preprocessing_group.add_argument("--sentiwords", action="store_true", help="tokenizer function will build senti net words")
-    preprocessing_group.add_argument("--subjscore", action="store_true", help="Subjectivity score feature will be added to the vector")
-    
-
-    files_group = parser.add_argument_group('files')
-    
-    files_group.add_argument("--tweets-file", default="Data\\tweet_data_complete.2tsv", 
-                                help="path to file containing label \\t tweet lines. Default = Data\merged_tweets.tsv") 
-    files_group.add_argument("--clusters-file", default="Data\\tweet_word_clusters.txt", 
-                                help="path to file containing word clusters. Default = Data\\tweet_word_clusters.txt")                         
-                                
-    record_group = parser.add_argument_group('record')
-    
-    record_group.add_argument("--save", action="store_true", help="If true it writes a file with information about the test, else it just prints it")
-    
-    args = parser.parse_args()
+    tweets = list(df['toks'])
+    pos_tweets = list(zip(list(df["pos"]), tweets))
+    labels = list(df['label']) 
     
     clusters_path = args.clusters_file
     tweets_path= args.tweets_file
@@ -91,18 +121,7 @@ if __name__ == "__main__":
 
     clist = [all_svm_C, related_svm_C, negative_svm_C]
     gammalist = [all_svm_gamma, related_svm_gamma, negative_svm_gamma]
-
-    # unpack labels and repack id + tweets
-    #tweet_list = read_tab_sep(tweets_path)
-    #id, labels, tweets = zip(*tweet_list)
-    #tweets = zip(id, tweets)
     
-    tweets_df = load_data_complete(tweets_path)
-    
-    tokens = list(tweets_df.tok_pos.apply(preprocessing, rm_url=True, red_len=True, lower=True, out_pos=False))
-    pos_tweets = list(zip(list(tweets_df.pos), tokens))
-    
-    labels = list(tweets_df.label)
 
     tokenizer = build_tokenizer(do_bigrams=args.bigrams, do_clusters=args.clusters, do_postags=args.postags, 
                                 do_postags_bg=args.postags_bg, do_sentiwords=args.sentiwords, cluster_lookup_file=clusters_path)
@@ -110,8 +129,10 @@ if __name__ == "__main__":
     pipeline_steps = build_pipeline_steps(tokenizer=tokenizer, preprocess=lambda pos_text : pos_text, do_length=args.length, 
                                     do_tfidf=args.tfidf, do_sentnet=args.sentnet, do_subjscore=args.subjscore, dim_reduction=args.dim_reduction)
    
+
     """
     #test
+    # leave this :) I'll use this to test the functions
     print(pos_tweets[:3])
     #from tweets_feature_extractor import tweets_length
     #print(tweets_length(pos_tweets[:3]))
@@ -129,6 +150,7 @@ if __name__ == "__main__":
     
     #    
     """
+
     kwargs_pre = {"pipeline_steps": pipeline_steps}
     kwargs = {1: copy.copy(kwargs_pre), 2: copy.copy(kwargs_pre), 3: copy.copy(kwargs_pre)}
     
@@ -244,6 +266,7 @@ if __name__ == "__main__":
         """
         
         sys.exit()
+        
     scoring = ["f1_micro", "f1_macro", "precision_micro", "precision_macro", "recall_micro", "recall_macro"]
     
     f1_scores = cross_validate(clf, pos_tweets, labels, cv=args.cv_k, scoring=scoring, return_train_score=False)
