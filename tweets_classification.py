@@ -1,5 +1,3 @@
-from tweet_data_parser import *
-
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, ClusterMixin
 
 from sklearn.feature_extraction.text import CountVectorizer
@@ -17,8 +15,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 import numpy as np
-
-from arktwokenize import twokenize
 
 from nltk.corpus import sentiwordnet as swn
 
@@ -40,7 +36,7 @@ GAMMA = "gamma"
 
 def process_tweets(tweet_list):
 
-    # use this function to process list of (id, tweet) tuples
+    # use this function to process list of (label, tweet) tuples
 
     UNRELATED = "Unrelated"
     NEG = "Neg"
@@ -74,7 +70,7 @@ def process_tweets(tweet_list):
             negative[LABEL].append(label)
             negative[NORMALIZED_LABEL].append(label)
             
-    print len(all[LABEL]), len(related[LABEL]), len(negative[LABEL])
+    print(len(all[LABEL]), len(related[LABEL]), len(negative[LABEL]))
                    
     return all, related, negative
 
@@ -169,12 +165,12 @@ class TweetClassifierH(BaseEstimator, ClassifierMixin):
 
         self.kwargs = kwargs           
 
-    def fit(self, tweets, labels):
+    def fit(self, pos_tweet, labels):
         
         if self.get_clf is None:
             raise ValueError("A classifier is needed")
         
-        tweet_list = zip(labels, tweets)
+        tweet_list = zip(labels, pos_tweet)
         all, related, negative = process_tweets(tweet_list)
         
         

@@ -19,7 +19,7 @@ def load_data_complete(data_file):
   """
   
   # read data from file containg output of ARKParser
-  f = open(data_file).read().split('\n')
+  f = open(data_file, encoding="utf-8").read().split('\n')
   #remove last new line
   f.pop()
   
@@ -32,7 +32,7 @@ def load_data_complete(data_file):
     
     pos_words = words.split(' ')
 #    data[_id]['tok_pos'] = words.split(' ')
-#    data[_id]['tok'] = [w.split('\t')[0] for w in pos_words]
+    data[_id]['tok'] = [w.split('\t')[0] for w in pos_words]
     data[_id]['pos'] = [w.split('\t')[1] for w in pos_words]
     data[_id]['tok_pos'] = [tuple(w.split('\t')) for w in pos_words]
       

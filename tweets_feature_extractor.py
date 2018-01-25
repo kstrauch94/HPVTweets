@@ -1,5 +1,3 @@
-from tweet_data_parser import *
-
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, ClusterMixin
 
 from sklearn.feature_extraction.text import CountVectorizer
@@ -18,9 +16,9 @@ from sklearn.metrics import accuracy_score
 
 import numpy as np
 
-from arktwokenize import twokenize
-
 from nltk.corpus import sentiwordnet as swn
+
+from preprocess import preprocessing
 
 import io
 import random
@@ -68,13 +66,6 @@ def process_subjectivity_file(filename):
             scores[word] = score
     
     return scores
-    
-def coalesce(token):
-    new_tokens = []
-    for char in token:
-        if len(new_tokens) < 2 or char != new_tokens[-1] or char != new_tokens[-2]:
-            new_tokens.append(char)
-    return ''.join(new_tokens)
 
 def bigrams(tokens):
     return [bg for bg in zip(tokens[:-1], tokens[1:])]
@@ -104,9 +95,7 @@ def tweet_net_sentiment(tweet):
     neg = 0
     obj = 0
     
-    tokens = preprocess(tweet)[1:]
-    
-    for word in tokens:
+    for word in tweet:
         for net in list(swn.senti_synsets(word)):
             pos += net.pos_score()
             neg += net.neg_score()
@@ -114,35 +103,32 @@ def tweet_net_sentiment(tweet):
             
     return [pos, neg, obj]
     
-def net_sentiment(tweets):
-    
-    return np.array([tweet_net_sentiment(tw) for tw in tweets])
+def net_sentiment(pos_tweet):
+    return np.array([tweet_net_sentiment(tw[1]) for tw in pos_tweet])
       
 
 def tweet_sub_score(tweet, score_lookup):
     
     score = 0
-
-    tokens = preprocess(tweet)[1:]
     
-    for word in tokens:
+    for word in tweet:
         if word in score_lookup:
             score += score_lookup[word]
             
     return score
     
-def sub_score(tweets):
+def sub_score(pos_tweet):
     
     subj_score_file = "Data" + os.sep + "subjectivity_score.txt"
 
     score_lookup = process_subjectivity_file(subj_score_file)
     
-    return np.array([tweet_sub_score(tw, score_lookup) for tw in tweets]).reshape(-1, 1)
+    return np.array([tweet_sub_score(tw[1], score_lookup) for tw in pos_tweet]).reshape(-1, 1)
 
-def tweets_length(tweets):
-    return np.array([len(t[1]) for t in tweets]).reshape(-1, 1)
+def tweets_length(pos_tweet):
+    return np.array([len(t[1]) for t in pos_tweet]).reshape(-1, 1)
     
-def build_tokenizer(do_bigrams=False, do_clusters=False, do_postags=False, do_postags_bg=False, do_sentiwords=False, cluster_lookup_file=None, pos_tag_file=None):
+def build_tokenizer(do_bigrams=False, do_clusters=False, do_postags=False, do_postags_bg=False, do_sentiwords=False, cluster_lookup_file=None):
     if do_bigrams:
         get_bigrams = bigrams
     else:
@@ -155,16 +141,14 @@ def build_tokenizer(do_bigrams=False, do_clusters=False, do_postags=False, do_po
         get_clusters = lambda tokens: []
         
     if do_postags:
-        tags_lookup = read_tags(pos_tag_file)
-        get_tags = lambda id: tags_lookup[id]
+        get_tags = lambda tags: tags
     else:
-        get_tags = lambda id: []
+        get_tags = lambda tags: []
         
     if do_postags_bg:
-        tags_lookup = read_tags(pos_tag_file)
-        get_tags_bg = lambda id: bigrams(tags_lookup[id])
+        get_tags_bg = lambda tags: bigrams(tags)
     else:
-        get_tags_bg = lambda id: []
+        get_tags_bg = lambda tags: []
         
     if do_sentiwords:
         get_sentiwords = tweet_wordnet
@@ -172,10 +156,11 @@ def build_tokenizer(do_bigrams=False, do_clusters=False, do_postags=False, do_po
         get_sentiwords = lambda tokens: []
 
     
-    def tokenizer(tokens):
-        id = tokens[0]
-        words= tokens[1:]
-        return words + get_bigrams(words) + get_clusters(words) + get_tags(id) + get_tags_bg(id) + get_sentiwords(words)
+    def tokenizer(pos_tweet):
+        words = pos_tweet[1]
+        pos_tags = pos_tweet[0]
+        tokens = words + get_bigrams(words) + get_clusters(words) + get_tags(pos_tags) + get_tags_bg(pos_tags) + get_sentiwords(words)
+        return [str(t) for t in tokens]
             
     return tokenizer 
 

@@ -1,7 +1,8 @@
-from tweet_data_parser import read_tab_sep
-from tweets_ml import build_tokenizer, preprocess
-from tweets_ml import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN, TweetClassifierLR, TweetClassifierRF
-from tweets_ml import build_pipeline_steps
+from load import load_data_complete
+from preprocess import preprocessing
+from tweets_feature_extractor import build_tokenizer
+from tweets_feature_extractor import build_pipeline_steps
+from tweets_classification import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN, TweetClassifierLR, TweetClassifierRF
 
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_validate, cross_val_predict
@@ -65,12 +66,10 @@ if __name__ == "__main__":
 
     files_group = parser.add_argument_group('files')
     
-    files_group.add_argument("--tweets-file", default="Data\\merged_tweets.tsv", 
+    files_group.add_argument("--tweets-file", default="Data\\tweet_data_complete.2tsv", 
                                 help="path to file containing label \\t tweet lines. Default = Data\merged_tweets.tsv") 
     files_group.add_argument("--clusters-file", default="Data\\tweet_word_clusters.txt", 
-                                help="path to file containing word clusters. Default = Data\\tweet_word_clusters.txt")
-    files_group.add_argument("--postags-file", default="Data\\processed_tags.txt", 
-                                help="path to file containing pos tags. Default = Data\\pos_tagged_tweet.csv")                         
+                                help="path to file containing word clusters. Default = Data\\tweet_word_clusters.txt")                         
                                 
     record_group = parser.add_argument_group('record')
     
@@ -81,7 +80,6 @@ if __name__ == "__main__":
     clusters_path = args.clusters_file
     tweets_path= args.tweets_file
     annotations_path = "Data\\TweetsAnnotation.txt"
-    postag_file = args.postags_file
 
     all_svm_C = 512
     related_svm_C = 128
@@ -95,32 +93,37 @@ if __name__ == "__main__":
     gammalist = [all_svm_gamma, related_svm_gamma, negative_svm_gamma]
 
     # unpack labels and repack id + tweets
-    tweet_list = read_tab_sep(tweets_path)
-    id, labels, tweets = zip(*tweet_list)
-    tweets = zip(id, tweets)
+    #tweet_list = read_tab_sep(tweets_path)
+    #id, labels, tweets = zip(*tweet_list)
+    #tweets = zip(id, tweets)
     
+    tweets_df = load_data_complete(tweets_path)
+    
+    tokens = list(tweets_df.tok_pos.apply(preprocessing, rm_url=True, red_len=True, lower=True, out_pos=False))
+    pos_tweets = list(zip(list(tweets_df.pos), tokens))
+    
+    labels = list(tweets_df.label)
+
     tokenizer = build_tokenizer(do_bigrams=args.bigrams, do_clusters=args.clusters, do_postags=args.postags, 
-                                do_postags_bg=args.postags_bg, do_sentiwords=args.sentiwords, cluster_lookup_file=clusters_path, pos_tag_file=postag_file)
+                                do_postags_bg=args.postags_bg, do_sentiwords=args.sentiwords, cluster_lookup_file=clusters_path)
     
-    pipeline_steps = build_pipeline_steps(tokenizer=tokenizer, preprocess=lambda id_text : preprocess(id_text, alt_pre=args.alt_preprocess), do_length=args.length,
+    pipeline_steps = build_pipeline_steps(tokenizer=tokenizer, preprocess=lambda pos_text : pos_text, do_length=args.length, 
                                     do_tfidf=args.tfidf, do_sentnet=args.sentnet, do_subjscore=args.subjscore, dim_reduction=args.dim_reduction)
    
     """
     #test
-    tweet = ["626942369506684932", "@DewsNewz RI Mandates HPV Vaccine for 7th Graders #HPV"]
-    tweet2 = ["1", "I am good and happy"]
+    print(pos_tweets[:3])
+    #from tweets_feature_extractor import tweets_length
+    #print(tweets_length(pos_tweets[:3]))
     
-    #from tweets_ml import tweets_length
-    #print(tweets_length([tweet]))
+    #from tweets_feature_extractor import net_sentiment
+    #print(net_sentiment(pos_tweets[:3]))
     
-    #from tweets_ml import net_sentiment
-    #print(net_sentiment([tweet, tweet2]))
+    #from tweets_feature_extractor import sub_score
+    #print(sub_score(pos_tweets[:3]))
     
-    #from tweets_ml import tweet_wordnet
-    #print tweet_wordnet(tweet[1])
-    
-    from tweets_ml import sub_score
-    print sub_score([tweet, tweet2])
+    print("TOK TOK TOK")
+    print(tokenizer(pos_tweets[2]))
     
     sys.exit()   
     
@@ -243,10 +246,10 @@ if __name__ == "__main__":
         sys.exit()
     scoring = ["f1_micro", "f1_macro", "precision_micro", "precision_macro", "recall_micro", "recall_macro"]
     
-    f1_scores = cross_validate(clf, tweets, labels, cv=args.cv_k, scoring=scoring, return_train_score=False)
+    f1_scores = cross_validate(clf, pos_tweets, labels, cv=args.cv_k, scoring=scoring, return_train_score=False)
 
     
-    y_pred = cross_val_predict(clf, tweets, labels, cv=args.cv_k)
+    y_pred = cross_val_predict(clf, pos_tweets, labels, cv=args.cv_k)
     
     report = classification_report(labels, y_pred)
     
@@ -275,7 +278,7 @@ if __name__ == "__main__":
 
     text.append("\n")
 
-    for score_name, scores in f1_scores.iteritems():
+    for score_name, scores in f1_scores.items():
         text.append("{} : {}, average: {}\n".format(score_name, scores, sum(scores)/args.cv_k))
         
     text.append(report)
