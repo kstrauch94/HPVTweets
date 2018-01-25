@@ -1,8 +1,8 @@
 from load import load_data
 from preprocess import preprocessing
-from tweets_ml import build_tokenizer, preprocess
-from tweets_ml import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN, TweetClassifierLR, TweetClassifierRF
-from tweets_ml import build_pipeline_steps
+from tweets_feature_extractor import build_tokenizer
+from tweets_feature_extractor import build_pipeline_steps
+from tweets_classification import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN, TweetClassifierLR, TweetClassifierRF
 
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_validate, cross_val_predict
@@ -80,7 +80,7 @@ def parse_arguments():
   
   files_group = parser.add_argument_group('files')
   
-  files_group.add_argument("--tweets-file", default="Data\\merged_tweets.tsv", 
+  files_group.add_argument("--tweets-file", default="Data\\tweet_for_dp.txt.predict", 
                               help="path to file containing tweet (dependecy parsing applied). Default = Data\merged_tweets.tsv")
   files_group.add_argument("--annotations", required = True,
                               help="path to file containing tweet annotations")

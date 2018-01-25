@@ -39,7 +39,7 @@ def _load_tweets_pos_dependecy(dep_file):
     tweet_data (list) : list of tweets to per parsed
   """
   
-  tweet_data = open(dep_file).read().split('\n\n')
+  tweet_data = open(dep_file, encoding="utf-8").read().split('\n\n')
   tweet_data.pop()
   
   return tweet_data
