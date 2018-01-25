@@ -38,45 +38,53 @@ C = "C"
 GAMMA = "gamma"
 
 
-def process_tweets(tweet_list):
+def process_tweets(tweets,labels):
+  """
+  Create dictionaries containing data for each level of classification
+  
+  :params:
+    tweets (list) : list of list of tokens
+    labels (list) : list of strings 
+  
+  :returns:
+    _all (dict) : all tweets (labels : `Unrelated`,'Related') 
+    related (dict) : positive,negative,neutral tweets (labels : `Positive`,`Negative`,`Neutral`)
+    negative (dict) : negative tweets (labels : `NegOthers`,`NegResistant`...)
+    
+    Dictionary keys are `tweet`,`label`,`normalized_label` (by level)
+  """
 
-    # use this function to process list of (id, tweet) tuples
+# use this function to process list of (id, tweet) tuples
 
-    UNRELATED = "Unrelated"
-    NEG = "Neg"
-    
-    NEG_LABEL = "Negative"
-    
-    all = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
-    
-    related = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
-    
-    negative = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
-
-    for label_tweet in tweet_list:
-        label = label_tweet[0]
-        tweet = label_tweet[1]
-        
-        # add tweet to all dict
-        all[TWEET].append(tweet)
-        all[LABEL].append(label)
-        all[NORMALIZED_LABEL].append(label if label == UNRELATED else "Related")
-        
-        # add tweet to related if applicable
-        if label != UNRELATED:
-            related[TWEET].append(tweet)
-            related[LABEL].append(label)
-            related[NORMALIZED_LABEL].append(label if NEG not in label else NEG_LABEL)
-            
-        # add tweet to negative if applicable
-        if NEG in label:
-            negative[TWEET].append(tweet)
-            negative[LABEL].append(label)
-            negative[NORMALIZED_LABEL].append(label)
-            
-    print len(all[LABEL]), len(related[LABEL]), len(negative[LABEL])
-                   
-    return all, related, negative
+  UNRELATED = "Unrelated"
+  NEG = "Neg"
+  NEG_LABEL = "Negative"
+  
+  _all = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
+  
+  related = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
+  
+  negative = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
+  
+  for tweet,label in zip(tweets,labels):
+      # add tweet to all dict
+      _all[TWEET].append(tweet)
+      _all[LABEL].append(label)
+      all[NORMALIZED_LABEL].append(label if label == UNRELATED else "Related")
+      
+      # add tweet to related if applicable
+      if label != UNRELATED:
+          related[TWEET].append(tweet)
+          related[LABEL].append(label)
+          related[NORMALIZED_LABEL].append(label if NEG not in label else NEG_LABEL)
+          
+      # add tweet to negative if applicable
+      if NEG in label:
+          negative[TWEET].append(tweet)
+          negative[LABEL].append(label)
+          negative[NORMALIZED_LABEL].append(label)
+                 
+  return _all, related, negative
 
 
 class BaseClf(BaseEstimator, ClusterMixin):

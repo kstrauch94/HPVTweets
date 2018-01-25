@@ -1,31 +1,18 @@
-from tweet_data_parser import *
-
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, ClusterMixin
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.pipeline import Pipeline
 
-from sklearn import svm
-from sklearn.neighbors import KNeighborsClassifier
+
 from sklearn.decomposition import TruncatedSVD
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
 
-from sklearn.metrics import accuracy_score
 
 import numpy as np
 
-from arktwokenize import twokenize
-
 from nltk.corpus import sentiwordnet as swn
 
-import io
-import random
 import os
-import copy
 
 UNRELATED = "Unrelated"
 NEG = "Neg"
@@ -41,11 +28,11 @@ def read_cluster_file(path):
     
     lookup = {}
 
-    with io.open(path, "r", encoding="utf-8") as clusters:
+    with open(path, "r", encoding="utf-8") as clusters:
         for line in clusters.readlines():
-            id, token, count = line.split("\t")
+            _id, token, count = line.split("\t")
             
-            lookup[token] = id
+            lookup[token] = _id
             
     return lookup
 
@@ -68,7 +55,8 @@ def process_subjectivity_file(filename):
             scores[word] = score
     
     return scores
-    
+
+# WHAT THIS FUNCTION IS DOING EXACTLY    
 def coalesce(token):
     new_tokens = []
     for char in token:

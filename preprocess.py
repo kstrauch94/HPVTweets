@@ -7,13 +7,26 @@ Created on Mon Jan 22 17:26:22 2018
 """
 
 # spell checking -> store in a separate file ?
-# stemming -> what happens if word is mispelled 
-# remove stopword
 
 import re
+from nltk.corpus import stopwords
+
+STOPWORDS = set(stopwords.words('english'))
+# TODO add stemming and check what happens if word is mispelled 
+
 
 # regexp to find multiple character occurrencies
 REDUCE_LEN = re.compile(r"(.)\1{2,}")
+
+def rm_stopwords(tweet):
+  """
+  Remove stopwords from tweet
+  
+  :params:
+    tweet (list) : list of tuple (word,pos)
+  """
+  
+  return [w for w in tweet if not w[0] in STOPWORDS]
 
 def remove_url(tweet):
   """
@@ -84,7 +97,7 @@ def replace_url(tweet):
   return [_url_to_string(w) for w in tweet]
 
 
-def preprocessing(tweet, rm_url = True, red_len = True, lower = True, out_pos = True):
+def preprocessing(tweet, rm_url = True, red_len = True, lower = True, rm_sw = True):
   """
   Apply preprocessing to tweet.
   
@@ -93,10 +106,12 @@ def preprocessing(tweet, rm_url = True, red_len = True, lower = True, out_pos = 
     red_len (bool) : reduce words length 
     lower (bool) : lowercase words
     repl_url (bool) : replace urls with string `urls`
-    out_pos (bool) : output form. If `True` is list of postagged tokens `['word\tpos','word\tpos',...]` else list of tokens ['word','word',...]
-      
+    rm_sw (bool) : remove stopwords
+    
+  :return:
+    
+    preprocessed tweet (list of tokens)
   """
-  
   if rm_url:
     tweet = remove_url(tweet)
   else:
@@ -105,26 +120,25 @@ def preprocessing(tweet, rm_url = True, red_len = True, lower = True, out_pos = 
     tweet = reduce_length(tweet)
   if lower:
     tweet = lowercase_tweet(tweet)
+  if rm_sw:
+    tweet = rm_stopwords(tweet)
  
-  if out_pos:
-    return ['\t'.join(w) for w in tweet]
-  else:
-    return [w[0] for w in tweet]
+  return [w[0] for w in tweet]
     
 
-#if __name__ == "__main__":
-#  
-#  from load import load_data_complete
-#  
-#  DATA_PATH = './data/dataset/tweet_data_complete.2tsv'
-#  
-#  data = load_data_complete(DATA_PATH)
-#    
-#  
-#  preprop_data = data.tok_pos.apply(preprocessing ,  rm_url = True, red_len = True, lower= True, out_pos = True)
-#  
-#  print(preprop_data.head())
-#  
-#  
+if __name__ == "__main__":
+  
+  from load import load_data
+  
+  ANNOTATIONS = './data/dataset/TweetsAnnotation.txt'
+  TWEET_DP = './data/dataset/tweet_for_dp.txt.predict'
+  
+  df = load_data(TWEET_DP,ANNOTATIONS)
+  
+  df['toks'] = df['toks_pos'].apply(preprocessing,rm_url = True, red_len = True, lower = True, rm_sw = False) 
+  
+  print(df.head())
+  
+
     
   
