@@ -9,6 +9,7 @@ from sklearn.model_selection import cross_validate, cross_val_predict
 
 from sklearn.metrics import classification_report
 
+import numpy as np
 import argparse
 import copy
 import sys
