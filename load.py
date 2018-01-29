@@ -39,7 +39,7 @@ def _load_tweets_pos_dependecy(dep_file):
     tweet_data (list) : list of tweets to per parsed
   """
   
-  tweet_data = open(dep_file, encoding="utf-8").read().split('\n\n')
+  tweet_data = open(dep_file).read().split('\n\n')
   tweet_data.pop()
   
   return tweet_data
@@ -59,6 +59,7 @@ def load_data(dep_file,annotations):
   
   tweet_data = _load_tweets_pos_dependecy(dep_file)
   anns = _load_annotations(annotations)
+  
   
   tok_idx = 1
   pos_idx = 3
@@ -81,61 +82,12 @@ def load_data(dep_file,annotations):
       data[_id]['dep'] = [int(w.split('\t')[dep_idx]) for w in tweet.split('\n')]
       
       # ONLY FOR PREPROCESSING
-      data[_id]['toks_pos'] = [(w.split('\t')[tok_idx],w.split('\t')[pos_idx]) for w in tweet.split('\n')]  
+      data[_id]['toks_pos'] = [(w.split('\t')[tok_idx],w.split('\t')[pos_idx]) for w in tweet.split('\n')]
+      
   
   df = pandas.DataFrame.from_dict(data, orient='index')
   
   return df
-
-
-
-def process_tweets(tweets,labels):
-  """
-  Create dictionaries containing data for each level of classification
-  
-  :params:
-    tweets (list) : list of list of tokens
-    labels (list) : list of strings 
-  
-  :returns:
-    _all (dict) : all tweets (labels : `Unrelated`,'Related') 
-    related (dict) : positive,negative,neutral tweets (labels : `Positive`,`Negative`,`Neutral`)
-    negative (dict) : negative tweets (labels : `NegOthers`,`NegResistant`...)
-    
-    Dictionary keys are `tweet`,`label`,`normalized_label` (by level)
-  """
-
-# use this function to process list of (id, tweet) tuples
-
-  UNRELATED = "Unrelated"
-  NEG = "Neg"
-  NEG_LABEL = "Negative"
-  
-  _all = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
-  
-  related = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
-  
-  negative = {TWEET: [], LABEL: [], NORMALIZED_LABEL: []}
-  
-  for tweet,label in zip(tweets,labels):
-      # add tweet to all dict
-      _all[TWEET].append(tweet)
-      _all[LABEL].append(label)
-      all[NORMALIZED_LABEL].append(label if label == UNRELATED else "Related")
-      
-      # add tweet to related if applicable
-      if label != UNRELATED:
-          related[TWEET].append(tweet)
-          related[LABEL].append(label)
-          related[NORMALIZED_LABEL].append(label if NEG not in label else NEG_LABEL)
-          
-      # add tweet to negative if applicable
-      if NEG in label:
-          negative[TWEET].append(tweet)
-          negative[LABEL].append(label)
-          negative[NORMALIZED_LABEL].append(label)
-                 
-  return _all, related, negative
 
 if __name__ == "__main__":
   
@@ -146,4 +98,3 @@ if __name__ == "__main__":
   
   tweets = list(df['toks'])
   
-  print(type(tweets))
