@@ -107,6 +107,9 @@ if __name__ == "__main__":
     pos_tweets = list(zip(list(df["pos"]), tweets))
     labels = list(df['label']) 
     
+    print("Shuffling data")
+    df = df.reindex(np.random.permutation(df.index))
+    
     clusters_path = args.clusters_file
     tweets_path= args.tweets_file
     annotations_path = "Data\\TweetsAnnotation.txt"
