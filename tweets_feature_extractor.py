@@ -1,9 +1,11 @@
 
+from preprocess import stem_word
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.pipeline import FeatureUnion
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import FunctionTransformer,MaxAbsScaler
+from sklearn.feature_selection import SelectKBest, chi2
 
 from collections import defaultdict
 
@@ -14,12 +16,14 @@ import numpy as np
 
 from nltk.corpus import sentiwordnet as swn
 
+                                                                                                                         
+
   
 def build_pipeline_steps(do_tfidf,do_tsvd,do_neg_words,do_bingliu,
                          do_clusters,do_postags,do_sentnet,
                          do_subjscore,do_dep_sent,do_sentiwords,
-                         ngram_range,deps, bingliu_pos_path,
-                         bingliu_neg_path,clusters_path,pos_tokens,subj_score_file):
+                         ngram_range,deps, bingliu_pos_path,do_scaling,
+                         bingliu_neg_path,clusters_path,pos_tokens,subj_score_file,stem):
   
   """
   Create pipeline for feature extraction. All parameters `do_.*` accepts boolean to decide whether to add the correspondent set of features.
@@ -45,17 +49,17 @@ def build_pipeline_steps(do_tfidf,do_tsvd,do_neg_words,do_bingliu,
       
   if do_neg_words:
     print("Add negated words")
-    neg_list = get_negation_list()
+    neg_list = get_negation_list(stem)
     features.append(('vect_negated_words', FunctionTransformer(getnegatedwordfeatures, kw_args = {'neg_list' : neg_list} ,validate = False)))
     
   if do_bingliu:
     print("Add bingliu sentiment lexicon")
-    pos_vocab,neg_vocab = get_pos_neg_words(bingliu_neg_path,bingliu_pos_path) 
+    pos_vocab,neg_vocab = get_pos_neg_words(bingliu_neg_path,bingliu_pos_path,stem) 
     features.append(('vect_bingliu_words', FunctionTransformer(getsentimentfeatures,validate = False, 
                                                               kw_args = {'pos_vocab': pos_vocab, 'neg_vocab' : neg_vocab})))
   if do_clusters:
     print("Add clusters features")
-    clusters = get_clusters(clusters_path)
+    clusters = get_clusters(clusters_path,stem)
     features.append(('vect_clusters', FunctionTransformer(tweetclusterfeatures,validate = False, 
                                                                           kw_args = {'clusters': clusters})))    
   if do_postags:
@@ -68,13 +72,13 @@ def build_pipeline_steps(do_tfidf,do_tsvd,do_neg_words,do_bingliu,
         
   if do_subjscore:
     print("Add subjectivity scores")
-    score_lookup = process_subjectivity_file(subj_score_file)
+    score_lookup = process_subjectivity_file(subj_score_file,stem)
     features.append( ("subj-score", FunctionTransformer(sub_score, kw_args = {'score_lookup' : score_lookup}, validate=False)) )
     
   if do_dep_sent:
     print("Add positive/negative words dependency parse related")
-    pos_vocab,neg_vocab = get_pos_neg_words(bingliu_neg_path,bingliu_pos_path)
-    features.append( ("subj-score", FunctionTransformer(get_sents_dependency, kw_args = {'pos_vocab': pos_vocab, 'deps' : deps, 'neg_vocab' : neg_vocab},
+    pos_vocab,neg_vocab = get_pos_neg_words(bingliu_neg_path,bingliu_pos_path,stem)
+    features.append( ("dependency pos-neg", FunctionTransformer(get_sents_dependency, kw_args = {'pos_vocab': pos_vocab, 'deps' : deps, 'neg_vocab' : neg_vocab},
                                                         validate=False)) )
   if do_sentiwords:
     print("Adding sentisynset words")
@@ -84,15 +88,23 @@ def build_pipeline_steps(do_tfidf,do_tsvd,do_neg_words,do_bingliu,
   
   pipeline_steps = Pipeline([ ("features", FeatureUnion(features)) ])
   
+  if do_scaling:
+    print("Scale feature matrix")
+    pipeline_steps.steps.append(("scaler", MaxAbsScaler()))
+  
+#  print("Selecting K best features")  
+#  pipeline_steps.steps.append(("Select-kbest", SelectKBest(chi2, k = 3000)))
+  
   return pipeline_steps
+  
 
-
-def get_clusters(cluster_path):
+def get_clusters(cluster_path, stem):
   """
   Creates clusters lookup table
   
   :params:
     cluster_path (str) : path to tweet clusters
+    stem (bool) : stem word if true
     
   :returns:
     clusters (dict) : key = cluster id, value = set of words
@@ -103,6 +115,7 @@ def get_clusters(cluster_path):
   with open(cluster_path) as infile:
     for line in infile:
       c,w,i = line.split('\t')
+      w = stem_word(w,stem)
       clusters[c].add(w)
       
   return clusters
@@ -159,14 +172,15 @@ def posfeatures(texts,pos_tokens):
     
   return pos_features
 
-def get_pos_neg_words(pos_file,neg_file):
+def get_pos_neg_words(pos_file,neg_file,stem):
   """
   Create set of positive and negative words
   
   :params:
     pos_file (str) : Opinion Lexicon. https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html
     neg_file (str) : Opinion Lexicon. https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html
-  
+    stem (bool) : stem word if true
+    
   :return:
     (pos_vocab,neg_vocab) (set) : set of words
     
@@ -174,8 +188,10 @@ def get_pos_neg_words(pos_file,neg_file):
   
   n = open(pos_file).readlines()
   p = open(neg_file).readlines()
-  neg_vocab = set([w.strip() for w in n if not w.startswith(';')])
-  pos_vocab = set([w.strip() for w in p if not w.startswith(';')])
+  neg_vocab = set([stem_word(w.strip(),stem) for w in n if not w.startswith(';')])
+  pos_vocab = set([stem_word(w.strip(),stem) for w in p if not w.startswith(';')])
+  
+  
   
   return pos_vocab,neg_vocab
   
@@ -208,18 +224,25 @@ def getsentimentfeatures(texts,pos_vocab,neg_vocab):
   return p_n_features  
   
   
-def get_negation_list():
+def get_negation_list(stem):
   """
   Retrieve negation words in list. Just in case we want to add more words
   or find a 'negation lexicon'
   
   :return:
-    neg_list (list) : list of common negation words
+    neg_set (set) : list of common negation words
+    stem (bool) : stem word if true
   """
   
-  neg_list = ['not', 'no', 'never', 'nobody', 'nothing', 'none', 'nowhere', 'neither'] 
+  neg_set = set(['none', 'hasnt', 'couldnt', 'nowhere', 'havent', 'dont', 'cant', 'didnt', 'arent', 'never', 
+                'not', 'nothing', 'nobody', 'wouldnt', 'hadnt', 'shouldnt', 'noone', 'aint', 'isnt', 'neither',
+                'wont', 'doesnt', 'no'])
   
-  return neg_list
+  if stem:
+    neg_set = set([stem_word(w,stem) for w in neg_set])
+
+  
+  return neg_set
   
 def getnegatedwordfeatures(texts,neg_list):
   """
@@ -255,28 +278,37 @@ def getnegatedwordfeatures(texts,neg_list):
     
   return neg_features
 
-def process_subjectivity_file(filename):
+def process_subjectivity_file(filename,stem):
+  """
+  Load subjecitvity score lookup
+  
+  :params:
+    filename (str) : path to file
+    stem (bool) : stem word if true
+  :return:
+    scores (dict) : word-scores lookup
+  """
 
-    scores = {}
-    
-    with open(filename, "r") as f:
-        for line in f.readlines():
-          if line == '\n':
-            pass
+  scores = {}
+  
+  with open(filename, "r") as f:
+      for line in f.readlines():
+        if line == '\n':
+          pass
+        else:
+          line = line.split(" ")
+          word = line[2].split("=")[1]
+          score = line[-1].split("=")[1].strip()
+          if score == "negative":
+              score = -1
+          elif score == "positive":
+              score = 1
           else:
-            line = line.split(" ")
-            word = line[2].split("=")[1]
-            score = line[-1].split("=")[1].strip()
-            if score == "negative":
-                score = -1
-            elif score == "positive":
-                score = 1
-            else:
-                score = 0
-            
-            scores[word] = score
-    
-    return scores
+              score = 0
+          
+          scores[stem_word(word,stem)] = score
+  
+  return scores
 
 # WHAT THIS FUNCTION IS DOING EXACTLY?    
 def coalesce(token):
@@ -302,6 +334,7 @@ def tweet_wordnet(tweets):
   
   :params:
     tweet (list) : list of lists of tokens
+    stem (bool) : stem word if true
     
   :return:
     sentinet synsets features (scipy.sparse.csr_matrix)
@@ -312,11 +345,11 @@ def tweet_wordnet(tweets):
   
   sentinet_tweets = []  
   for tweet in tweets:
-    words = []
+    words = set()
     for word in tweet:
         for net in list(swn.senti_synsets(word)):
-            words.append(net.synset.lemmas()[0].name())
-    sentinet_tweets.append(words)
+            words.add(net.synset.lemmas()[0].name())
+    sentinet_tweets.append(list(words))
     
   sentiwordnet_feat = vec.fit_transform(sentinet_tweets)
             

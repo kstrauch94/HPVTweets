@@ -3,7 +3,7 @@
 from sklearn.pipeline import Pipeline
 
 from sklearn import svm
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV,ShuffleSplit
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -153,10 +153,14 @@ class HierarchicalClassifier(BaseEstimator, ClassifierMixin):
     Replace classifiers in `self.clfs` with optimized ones
     """
     
+    best_f1s = []
+    
     for idx,clf in enumerate(self.clfs):
       X_new,y_new = self.get_by_level_data(X = X,y = y,level = idx)
-      self.clfs[idx] = optimize_hp(clf = self.clfs[idx],X = X_new,y = y_new, params = self.params[idx])
+      best_f1, self.clfs[idx] = optimize_hp(clf = self.clfs[idx],X = X_new,y = y_new, params = self.params[idx])
+      best_f1s.append(best_f1)
     
+    return best_f1s
     
     
   def fit(self,X,y):
@@ -378,15 +382,21 @@ def optimize_hp(clf,X,y,params):
    :returns:
      clf (sklearn classifier) : optimized classifier
   """
+  best_f1 = 0
+  
+#  rs = ShuffleSplit(n_splits = 1, test_size = 0.33) # reproduce baseline
   
   for param in params:
     
-    gs = GridSearchCV(clf,param,refit = False, scoring = 'f1_macro')  # 3 fold CV
+#    gs = GridSearchCV(clf,param,refit = False,cv = rs,scoring = 'f1_micro') # reproduce baseline
+    
+    gs = GridSearchCV(clf,param,refit = False,scoring = 'f1_macro')  # 3 fold CV
     gs.fit(X,y)
     searched_param = list(param.keys())[0]
     best_value = gs.best_params_[searched_param]
     print("Best value for {} : {}".format(searched_param,best_value))
-    print("Best F1 macro : {}".format(gs.best_score_))
+    best_f1 = gs.best_score_
+    print("Best F1 macro {}".format(best_f1))
     clf.set_params(**{searched_param : best_value})
     
-  return clf 
+  return best_f1,clf 

@@ -5,6 +5,10 @@ __pycache__/
 
 # data folder
 data/
+run_tests/
+sistematic_results/
+results/
+
 
 # C extensions
 *.so

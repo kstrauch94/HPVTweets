@@ -10,6 +10,8 @@ Created on Mon Jan 22 17:26:22 2018
 
 import re
 from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+
 
 STOPWORDS = set(stopwords.words('english'))
 # TODO add stemming and check what happens if word is mispelled 
@@ -17,6 +19,27 @@ STOPWORDS = set(stopwords.words('english'))
 
 # regexp to find multiple character occurrencies
 REDUCE_LEN = re.compile(r"(.)\1{2,}")
+STEMMER = PorterStemmer()  
+
+
+def stem_word(w,stem):
+  """
+  Stem single word:
+  
+  :params:
+    w (str) : word
+    stem (bool) : stem word
+  :return:
+    w (str) : word
+  """
+  w = STEMMER.stem(w) if stem else w
+  
+  return w
+  
+  
+def stem_tweet(tweet):
+  
+  return [(stem_word(w[0],stem = True),w[1]) for w in tweet]
 
 def rm_stopwords(tweet):
   """
@@ -97,7 +120,7 @@ def replace_url(tweet):
   return [_url_to_string(w) for w in tweet]
 
 
-def preprocessing(tweet, rm_url = True, red_len = True, lower = True, rm_sw = True, rm_tags_mentions = False):
+def preprocessing(tweet, rm_url = True, red_len = True, lower = True, rm_sw = True, rm_tags_mentions = False, stem = False, out_pos = False):
   """
   Apply preprocessing to tweet.
   
@@ -124,10 +147,18 @@ def preprocessing(tweet, rm_url = True, red_len = True, lower = True, rm_sw = Tr
     tweet = rm_stopwords(tweet)
   if rm_tags_mentions:
     tweet = delete_hashtags_mentions(tweet)
+  if stem:
+    tweet = stem_tweet(tweet)
+    
+  if out_pos:
+    
+    return ['\t'.join(w) for w in tweet]
+
+  else:
+    
+    return [w[0] for w in tweet]
  
-  return [w[0] for w in tweet]
-
-
+  
 def delete_hashtags_mentions(tweet):
   """
   Remove hashtags and mentions from the tweet
