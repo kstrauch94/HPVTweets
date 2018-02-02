@@ -149,6 +149,7 @@ if __name__ == "__main__":
   # still dataframe with all columns
   
   print("Shuffling data")
+  np.random.seed(42)
   df = df.reindex(np.random.permutation(df.index))
   
   tweets = list(df['toks'])
