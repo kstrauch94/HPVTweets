@@ -97,6 +97,8 @@ def parse_arguments():
   features_group.add_argument("--scale", action="store_true", help="Scale feature matrix")
   features_group.add_argument("--bigramsent", action="store_true", help="Bigram sentiment score feature will be added to the vector")
   features_group.add_argument("--unigramsent", action="store_true", help="Unigram sentiment score feature will be added to the vector")
+  features_group.add_argument("--argscores", action="store_true", help="Argument lexicon score features will be added to the vector")
+
 
   
   files_group = parser.add_argument_group('files')
@@ -124,6 +126,9 @@ def parse_arguments():
 
   files_group.add_argument("--unigram-sent-file",default = "{}".format(os.path.join("data","hash-sentiments","unigrams-pmilexicon.txt")),
                               help="path to file containing unigram hashtag sentiment scores. Default = data\\hash-sentiments\\unigrams-pmilexicon.txt")
+                        
+  files_group.add_argument("--arg-lexicon-folder",default = "{}".format(os.path.join("data","arg-lexicon")),
+                              help="path to folder containing argument lexicon files. (please exclude trailing \\ after folder name) Default = data\\arg-lexicon")
                               
                               
   record_group = parser.add_argument_group('record')
@@ -168,6 +173,7 @@ if __name__ == "__main__":
                            do_scaling = args.scale,
                            do_bigram_sent = args.bigramsent,
                            do_unigram_sent = args.unigramsent,
+                           do_argument_scores = args.argscores,
                            deps = deps, 
                            stem = args.stem,
                            bingliu_pos_path = args.bingliu_pos,
@@ -175,6 +181,7 @@ if __name__ == "__main__":
                            clusters_path = args.clusters_file,
                            bigram_sent_file = args.bigram_sent_file,
                            unigram_sent_file = args.unigram_sent_file,
+                           arguments_folder = args.arg_lexicon_folder,
                            pos_tokens = pos,
                            subj_score_file = args.subjscore_file)
   
@@ -278,6 +285,7 @@ if __name__ == "__main__":
   text.append("scaled features: {}\n".format(args.scale))
   text.append("bigram sentiment scores: {}\n".format(args.bigramsent))
   text.append("unigram sentiment scores: {}\n".format(args.unigramsent))
+  text.append("argument lexicon scores: {}\n".format(args.argscores))
 
   
   text.append("Feature matrix shape: {}\n".format(X.shape))
@@ -335,6 +343,8 @@ if __name__ == "__main__":
         features += "bigramsent-"
     if args.unigramsent:
         features += "unigramsent-"
+    if args.argscores:
+        features += "argscores-"
     
     filename = "{}_{}_{}10cv.txt".format(args.classifier,preprocess,features)
     

@@ -14,6 +14,11 @@ from sklearn.decomposition import TruncatedSVD
 
 import numpy as np
 
+import glob
+import ntpath
+import os
+import re
+
 from nltk.corpus import sentiwordnet as swn
 
                                                                                                                          
@@ -23,7 +28,10 @@ def build_pipeline_steps(do_tfidf,do_tsvd,do_neg_words,do_bingliu,
                          do_clusters,do_postags,do_sentnet,
                          do_subjscore,do_dep_sent,do_sentiwords,
                          ngram_range,deps, bingliu_pos_path,do_scaling,
-                         bingliu_neg_path,clusters_path,pos_tokens,subj_score_file,stem):
+                         do_bigram_sent,do_unigram_sent, do_argument_scores,
+                         bingliu_neg_path,clusters_path,pos_tokens,
+                         subj_score_file,bigram_sent_file,unigram_sent_file,
+                         arguments_folder,stem):
   
   """
   Create pipeline for feature extraction. All parameters `do_.*` accepts boolean to decide whether to add the correspondent set of features.
@@ -72,8 +80,23 @@ def build_pipeline_steps(do_tfidf,do_tsvd,do_neg_words,do_bingliu,
         
   if do_subjscore:
     print("Add subjectivity scores")
-    score_lookup = process_subjectivity_file(subj_score_file,stem)
-    features.append( ("subj-score", FunctionTransformer(sub_score, kw_args = {'score_lookup' : score_lookup}, validate=False)) )
+    subj_score_lookup = process_subjectivity_file(subj_score_file,stem)
+    features.append( ("subj-score", FunctionTransformer(score_document, kw_args = {'score_lookup' : subj_score_lookup}, validate=False)) )
+    
+  if do_bigram_sent:
+    print("Add bigram sentiment scores")
+    bigram_sent_score_lookup = get_bigram_sentiments(bigram_sent_file, stem)
+    features.append( ("bigram sentiment score", FunctionTransformer(score_document_bigrams, kw_args = {'score_lookup' : bigram_sent_score_lookup}, validate=False)) )
+  
+  if do_argument_scores:
+    print("Add argument scores")
+    matchers = read_arg_lexicon(arguments_folder)
+    features.append( ("argument lexicon score", FunctionTransformer(argument_scores, kw_args = {'matchers' : matchers}, validate=False)) )
+    
+  if do_unigram_sent:
+    print("Add unigram sentiment scores")
+    unigram_sent_score_lookup = get_unigram_sentiments(unigram_sent_file,stem)
+    features.append( ("unigram sentiment score", FunctionTransformer(score_document, kw_args = {'score_lookup' : unigram_sent_score_lookup}, validate=False)) )
     
   if do_dep_sent:
     print("Add positive/negative words dependency parse related")
@@ -354,7 +377,7 @@ def net_sentiment(tweets):
     return np.array([tweet_net_sentiment(tw) for tw in tweets])
       
 
-def tweet_sub_score(tweet, score_lookup):
+def tweet_score(tweet, score_lookup):
     
     score = 0
     
@@ -364,14 +387,20 @@ def tweet_sub_score(tweet, score_lookup):
             
     return score
     
-def sub_score(tweets,score_lookup):
+def score_document(tweets,score_lookup):
     
-    return np.array([tweet_sub_score(tw, score_lookup) for tw in tweets]).reshape(-1, 1)
+    return np.array([tweet_score(tw, score_lookup) for tw in tweets]).reshape(-1, 1)
+    
+def score_document_bigrams(tweets, score_lookup):
+    
+    return np.array([tweet_score(bigrams(tw), score_lookup) for tw in tweets]).reshape(-1, 1)
 
+def bigrams(tokens):
+    return [bg for bg in zip(tokens[:-1], tokens[1:])]
+    
 def tweets_length(tweets):
     return np.array([len(t[1]) for t in tweets]).reshape(-1, 1)
     
-
 
 def get_sents_dependency(texts,deps,pos_vocab,neg_vocab):
   """
@@ -413,3 +442,142 @@ def get_sents_dependency(texts,deps,pos_vocab,neg_vocab):
     
   return dep_features
 
+    
+def get_bigram_sentiments(bigrams_path, stem):
+  """
+  Creates bigram sentiments lookup table
+  
+  :params:
+    bigrams_path (str) : path to tweet bigram sentiments
+    stem (bool) : stem word if true
+    
+  :returns:
+    bigram_sentiments (dict) : key = word, value = score
+  """
+  
+  bigram_sentiments = {}
+  # also doesnt work on windows without the encoding parameter
+  with open(bigrams_path, encoding="utf-8") as infile:
+    for line in infile:
+      w1, w2, score, pos, neg = line.split()
+      w1 = stem_word(w1, stem)
+      w2 = stem_word(w2, stem)
+      bigram_sentiments[w1, w2] = float(score)
+      
+  return bigram_sentiments
+
+def get_unigram_sentiments(unigrams_path, stem):
+  """
+  Creates unigram sentiments lookup table
+  
+  :params:
+    unigrams_path (str) : path to tweet unigram sentiments
+    stem (bool) : stem word if true
+    
+  :returns:
+    unigram_sentiments (dict) : key = word, value = score
+  """
+  
+  unigram_sentiments = {}
+  # also doesnt work on windows without the encoding parameter
+  with open(unigrams_path, encoding="utf-8") as infile:
+    for line in infile:
+      word, score, pos, neg = line.split()
+      word = stem_word(word, stem)
+      unigram_sentiments[word] = float(score)
+      
+  return unigram_sentiments
+
+  
+class RegexMatcher:
+
+    def __init__(self, name):
+        self.name = name
+        
+        self.regexlist = []
+        
+    def add(self, regex):
+        self.regexlist.append(re.compile(regex))
+        
+    def match(self, text):
+    
+        count = 0
+        for regex in self.regexlist:
+            if re.match(regex, text) != None:
+                count += 1
+                
+        return count
+        
+    def __str__(self):
+        s = ""
+        for regex in self.regexlist:
+            s += str(regex)+"\n"
+            
+        return s
+  
+def read_arg_lexicon(path_to_folder):
+    
+    macro_files = ["modals.tff", "spoken.tff", "wordclasses.tff", "pronoun.tff", "intensifiers.tff"]
+    macro_files = [os.path.join(path_to_folder, file) for file in macro_files]
+    
+    other_files = glob.glob(path_to_folder+"\\*.tff")
+    other_files = sorted([file for file in other_files if file not in macro_files])
+    
+    macros = {}
+    
+    for file in macro_files:
+        with open(file, "r") as f:
+            for line in f.readlines():
+                #split the file
+                macro_name, substitutions = line.strip().split("=")
+                
+                # make the key the same format as it appears on regex
+                macro_name = "(" + macro_name + ")"  
+                
+                # convert options into a regex
+                substitutions = substitutions.replace("{", "(").replace("}", ")").replace(", ", "|")
+                
+                macros[macro_name] = substitutions
+                
+    
+    matchers = []
+    
+    for file in other_files:
+        # create regexmatcher for each file with name being the filename (not the whole path)
+        regexmatcher = RegexMatcher(ntpath.basename(file))
+    
+        with open(file, "r") as f:
+            for line in f.readlines():
+                if line.startswith("#"): # lines starting with # are comments :v
+                    continue
+                
+                if "@" in line:
+                    # split to tokens to easily look for token in dictionary
+                    line = line.strip().split() 
+                    for i, token in enumerate(line):
+                        # if token is in the dict then we add the regex in the position of the token
+                        if token in macros: 
+                            line[i] = macros[token]
+                    line = " ".join(line)
+                
+                regexmatcher.add(line.replace("\\", "").strip())
+        
+        matchers.append(regexmatcher)
+            
+    return matchers
+                        
+                
+def tweet_argument_scores(tweet, matchers):
+    
+    scores = []
+    for matcher in matchers:
+        scores.append(matcher.match(" ".join(tweet)))
+            
+    return scores
+    
+def argument_scores(tweets, matchers):
+    
+    return np.array([tweet_argument_scores(tw, matchers) for tw in tweets])                
+            
+                
+    
