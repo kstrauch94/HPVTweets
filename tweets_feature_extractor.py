@@ -107,16 +107,16 @@ def get_clusters(cluster_path, stem):
     stem (bool) : stem word if true
     
   :returns:
-    clusters (dict) : key = cluster id, value = set of words
+    clusters (dict) : key = word, value = cluster
   """
   
-  clusters = defaultdict(set)
-  
-  with open(cluster_path) as infile:
+  clusters = {}
+  # also doesnt work on windows without the encoding parameter
+  with open(cluster_path, encoding="utf-8") as infile:
     for line in infile:
-      c,w,i = line.split('\t')
-      w = stem_word(w,stem)
-      clusters[c].add(w)
+      cluster, word, i = line.split('\t')
+      word = stem_word(word, stem)
+      clusters[word] = cluster
       
   return clusters
   
@@ -137,17 +137,16 @@ def tweetclusterfeatures(texts, clusters):
   
   vec = CountVectorizer(preprocessor = ' '.join, tokenizer = str.split)
   
-  mapped_texts = []
+  mapped_document = []
   
   for text in texts:
     mapped_text = []
-    for w in text:
-      for k,v in clusters.items():
-        if w in v:
-          mapped_text.append(k)
-    mapped_texts.append(mapped_text)
+    for word in text:
+      if word in clusters:
+        mapped_text.append(clusters[word])
+    mapped_document.append(mapped_text)
   
-  cluster_features = vec.fit_transform(mapped_texts)
+  cluster_features = vec.fit_transform(mapped_document)
   
   return cluster_features
 
@@ -309,24 +308,6 @@ def process_subjectivity_file(filename,stem):
           scores[stem_word(word,stem)] = score
   
   return scores
-
-# WHAT THIS FUNCTION IS DOING EXACTLY?    
-def coalesce(token):
-    new_tokens = []
-    for char in token:
-        if len(new_tokens) < 2 or char != new_tokens[-1] or char != new_tokens[-2]:
-            new_tokens.append(char)
-    return ''.join(new_tokens)
-    
-def clusters(tokens, cluster_lookup):
-
-    clusters = []
-    
-    for token in tokens:
-        if token in cluster_lookup:
-            clusters.append(cluster_lookup[token])
-            
-    return clusters
     
 def tweet_wordnet(tweets):
   """
@@ -431,5 +412,4 @@ def get_sents_dependency(texts,deps,pos_vocab,neg_vocab):
   dep_features = vec.fit_transform(dep_tweets)
     
   return dep_features
-    
 
