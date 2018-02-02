@@ -95,6 +95,9 @@ def parse_arguments():
   features_group.add_argument("--depsent", action="store_true", help="Dependencies feature for Positive/Negative words from Bing Liu")
   features_group.add_argument("--negwords", action="store_true", help="Negated words features")
   features_group.add_argument("--scale", action="store_true", help="Scale feature matrix")
+  features_group.add_argument("--bigramsent", action="store_true", help="Bigram sentiment score feature will be added to the vector")
+  features_group.add_argument("--unigramsent", action="store_true", help="Unigram sentiment score feature will be added to the vector")
+
   
   files_group = parser.add_argument_group('files')
   
@@ -115,8 +118,14 @@ def parse_arguments():
   
   files_group.add_argument("--bingliu-neg",default = "{}".format(os.path.join("data","bingliunegs.txt")),
                               help="path to file containing bing liu negative words. Default = data\\bingliunegs.txt")
-  
-                     
+                              
+  files_group.add_argument("--bigram-sent-file",default = "{}".format(os.path.join("data","hash-sentiments","bigrams-pmilexicon.txt")),
+                              help="path to file containing bigrams hashtag sentiment scores. Default = data\\hash-sentiments\\bigrams-pmilexicon.txt")  
+
+  files_group.add_argument("--unigram-sent-file",default = "{}".format(os.path.join("data","hash-sentiments","unigrams-pmilexicon.txt")),
+                              help="path to file containing unigram hashtag sentiment scores. Default = data\\hash-sentiments\\unigrams-pmilexicon.txt")
+                              
+                              
   record_group = parser.add_argument_group('record')
   
   record_group.add_argument("--save", type = str,default = False, help="If true it writes a file with information about the test, else it just prints it")
@@ -157,11 +166,15 @@ if __name__ == "__main__":
                            do_dep_sent = args.depsent,
                            do_sentiwords = args.sentiwords,
                            do_scaling = args.scale,
+                           do_bigram_sent = args.bigramsent,
+                           do_unigram_sent = args.unigramsent,
                            deps = deps, 
                            stem = args.stem,
                            bingliu_pos_path = args.bingliu_pos,
                            bingliu_neg_path = args.bingliu_neg,
                            clusters_path = args.clusters_file,
+                           bigram_sent_file = args.bigram_sent_file,
+                           unigram_sent_file = args.unigram_sent_file,
                            pos_tokens = pos,
                            subj_score_file = args.subjscore_file)
   
@@ -263,6 +276,9 @@ if __name__ == "__main__":
   text.append("dependency sent words: {}\n".format(args.depsent))
   text.append("negated words: {}\n".format(args.negwords))
   text.append("scaled features: {}\n".format(args.scale))
+  text.append("bigram sentiment scores: {}\n".format(args.bigramsent))
+  text.append("unigram sentiment scores: {}\n".format(args.unigramsent))
+
   
   text.append("Feature matrix shape: {}\n".format(X.shape))
 
@@ -315,6 +331,10 @@ if __name__ == "__main__":
         features += "scale-"
     if args.optim_single:
         features += "optim-"
+    if args.bigramsent:
+        features += "bigramsent-"
+    if args.unigramsent:
+        features += "unigramsent-"
     
     filename = "{}_{}_{}10cv.txt".format(args.classifier,preprocess,features)
     
