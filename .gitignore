@@ -4,7 +4,20 @@ __pycache__/
 *$py.class
 
 # data folder
-data/
+data/arg-lexicon
+data/hash-sentiments
+data/50mpaths2
+data/bingliunegs.txt
+data/bingliuposs.txt
+data/hashtag-emotion-0.2.txt
+data/subj_score.txt
+data/dataset/TweeboParser/
+data/dataset/working_dir/
+data/dataset/tweet_data_complete.2tsv
+data/dataset/P3_vaccine-twitter-data.tsv
+data/dataset/tweet_for_dp.txt
+data/dataset/tweet_for_dp.txt.predict
+data/dataset/TweetsAnnotation.txt
 run_tests/
 sistematic_results/
 
