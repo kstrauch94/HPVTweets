@@ -12,7 +12,9 @@ data/bingliuposs.txt
 data/hashtag-emotion-0.2.txt
 data/subj_score.txt
 data/dataset/TweeboParser/
+data/dataset/spell_checked_parsed.txt
 data/dataset/working_dir/
+data/dataset/spell_checked_parsed.txt
 data/dataset/tweet_data_complete.2tsv
 data/dataset/P3_vaccine-twitter-data.tsv
 data/dataset/tweet_for_dp.txt

@@ -12,15 +12,13 @@ import re
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
-
 STOPWORDS = set(stopwords.words('english'))
 # TODO add stemming and check what happens if word is mispelled 
 
 
 # regexp to find multiple character occurrencies
 REDUCE_LEN = re.compile(r"(.)\1{2,}")
-STEMMER = PorterStemmer()  
-
+STEMMER = PorterStemmer()
 
 def stem_word(w,stem):
   """
@@ -149,7 +147,7 @@ def preprocessing(tweet, rm_url = True, red_len = True, lower = True, rm_sw = Tr
     tweet = delete_hashtags_mentions(tweet)
   if stem:
     tweet = stem_tweet(tweet)
-    
+
   if out_pos:
     
     return ['\t'.join(w) for w in tweet]
@@ -174,12 +172,13 @@ if __name__ == "__main__":
   
   from load import load_data
   
-  ANNOTATIONS = './data/dataset/TweetsAnnotation.txt'
-  TWEET_DP = './data/dataset/tweet_for_dp.txt.predict'
+  TWEET_FILE = './data/dataset/tweet_for_dp.txt.predict'
+  ANNOS = './data/dataset/TweetsAnnotation.txt'
   
-  df = load_data(TWEET_DP,ANNOTATIONS)
   
-  df['toks'] = df['toks_pos'].apply(preprocessing,rm_url = True, red_len = True, lower = True, rm_sw = False) 
+  df = load_data(dep_file = TWEET_FILE, annotations = ANNOS)
+  
+  df['toks'] = df['toks_pos'].apply(preprocessing,rm_url = True, red_len = True, lower = True, rm_sw = False, spell = True) 
   
   print(df.head())
   
