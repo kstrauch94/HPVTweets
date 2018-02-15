@@ -19,7 +19,7 @@ from sklearn import svm
 # TAKEN FROM : 
 #  http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html#sphx-glr-auto-examples-model-selection-plot-confusion-matrix-py
 def plot_confusion_matrix(cm, classes,
-                          normalize=True,
+                          normalize=False,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
     """
@@ -28,9 +28,8 @@ def plot_confusion_matrix(cm, classes,
     """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
     else:
-        print('Confusion matrix, without normalization')
+      pass
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
@@ -94,19 +93,12 @@ def by_class_error_analysis(df,y_true,y_pred,limit,error,out_path):
   
   for label in unique_labels:
     out_file.write("{}\n".format(str(label).upper()))
-
-    print("True label is : {}".format(label))
     
     if error == 'FP':
       error_idx = np.where((y_true!=label) & (y_pred==label))[0] #take indices
     else:
       error_idx = np.where((y_true==label) & (y_pred!=label))[0] #take indices
-      
-    print(error_idx)
-    
-    for e_idx in error_idx:
-      print(y_true[e_idx],y_pred[e_idx],sep = ' -> ')
-        
+            
     if len(error_idx) < 1:
       out_file.write("No {}\n".format(error))
       

@@ -345,7 +345,7 @@ if __name__ == "__main__":
                       title='Confusion Matrix')
     
     
-    plt.show()
+    plt.savefig('confustion_matrix.png')
     
   if args.error_analysis:
     
