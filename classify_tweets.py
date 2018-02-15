@@ -8,11 +8,14 @@ from sklearn.linear_model import LogisticRegression
 
 from sklearn.model_selection import cross_validate, cross_val_predict
 
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 
 import numpy as np
 import argparse
 import os
+
+from utils import plot_confusion_matrix,store_hyperparameters,by_class_error_analysis
+import matplotlib.pyplot as plt
 
 L_SVM_B = "l_svm_b"
 RBF_SVM_B = "rbf_svm_b"
@@ -28,32 +31,6 @@ LR_PARAMS = [{'C' : [1,64, 128, 256, 512, 1024]}]
 
 clf_choices = [L_SVM_B,RBF_SVM_B,L_SVM_H,RBF_SVM_H,LR_B,LR_H]
 
-
-
-def store_hyperparameters(clf,text):
-  """
-  Add to list of info to be printed hyperparameters of classifiers.
-  
-  :params:
-    clf (classifier) : classifier 
-    text (list) : list to which append infos
-  """
-  
-  def base_clf_hp(clf,text):
-
-    if isinstance(clf,svm.LinearSVC) or isinstance(clf,LogisticRegression):
-      text.append("Hyperparameters: C = {}\n".format(clf.C))
-    
-    elif isinstance(clf,svm.SVC):
-      text.append("Hyperparameters: C = {}, gamma = {}\n".format(clf.C,clf.gamma))
-      
-  if isinstance(clf,HierarchicalClassifier):
-    for clf in clf.clfs:
-      base_clf_hp(clf,text)
-  
-  else:
-
-    base_clf_hp(clf,text)
 
 def parse_arguments():
   """
@@ -80,6 +57,7 @@ def parse_arguments():
   classifier_group.add_argument("-c", "--classifier", choices=clf_choices, default=L_SVM_B, help="Choose classifier")
   classifier_group.add_argument("--class-weights", action = "store_true", help="Apply class weights to classifier (inversely proportional to class frequencies in the input)")
   classifier_group.add_argument("--optim-single",action = "store_true", help="Optimize hyperparameters for single classifier")
+  
   
   features_group = parser.add_argument_group('preprocessing')
   
@@ -133,7 +111,10 @@ def parse_arguments():
                               
   record_group = parser.add_argument_group('record')
   
-  record_group.add_argument("--save", type = str,default = False, help="If true it writes a file with information about the test, else it just prints it")
+  record_group.add_argument("--save", type = str, default = False, help="If true it writes a file with information about the test, else it just prints it")
+  record_group.add_argument("--confusion-matrix",action = "store_true", help="Display confusion matrix")
+  record_group.add_argument("--error-analysis", type = str, default = False, help="Save to a file (path to be provided) tweets misclassified")
+  
   
   return parser.parse_args()
 
@@ -254,7 +235,7 @@ if __name__ == "__main__":
   y_pred = cross_val_predict(clf, X, labels, cv=10)
   
   report = classification_report(labels, y_pred)
-  
+      
   text = []
   text.append("classifier: {}\n".format(args.classifier))
   text.append("class weights: {}\n".format(args.class_weights))
@@ -354,6 +335,29 @@ if __name__ == "__main__":
     
     with open(os.path.join(args.save,filename), "w") as f:
         f.writelines(text)
+        
+  if args.confusion_matrix:
+  
+    cm = confusion_matrix(labels,y_pred)
+    np.set_printoptions(precision=2)
+    plt.figure()
+    plot_confusion_matrix(cm, classes=np.unique(labels),
+                      title='Confusion Matrix')
+    
+    
+    plt.show()
+    
+  if args.error_analysis:
+    
+    if not os.path.exists(args.error_analysis):
+      os.mkdir(args.error_analysis)
+    
+    by_class_error_analysis(df = df, y_true = labels, y_pred = y_pred, limit = 10, error = 'FP', out_path = args.error_analysis )
+    by_class_error_analysis(df = df, y_true = labels, y_pred = y_pred, limit = 10, error = 'FN', out_path = args.error_analysis )
+    
+  
+        
+
     
     
     
