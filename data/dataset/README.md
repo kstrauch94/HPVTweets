@@ -14,6 +14,9 @@ The intermediate step is done in order to get rid of missing tweets ( and tweets
 ## SPELL CHECKED
 
 Once you created the the file with the dependency it is possible to apply spell checking. For complete reproducibility the files using for spell check are provided.
+
+    $ python3 generate_data_file.py -p tweet_file_parsed -o output_path
+
 This step is performed now for the following reason:
 - need for tokenization
 - need for pos tags (provided by parsing) for avoiding parsing urls and emoticons

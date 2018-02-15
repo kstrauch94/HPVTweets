@@ -12,7 +12,7 @@ from hunspell import HunSpell
 
 
 DISCARD = ['\n', 'Twitter / Account gesperr\n']
-DICS = ['/usr/share/hunspell/en_US.dic', '/usr/share/hunspell/en_US.aff']
+DICS = ['./en_US.dic', './en_US.aff']
 SPELLER = HunSpell(*DICS)
 NO_SPELL = ['^','Z','L','M','!','Y','#','@','~','U','E',',','G','S']
 
