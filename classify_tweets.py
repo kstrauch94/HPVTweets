@@ -125,7 +125,7 @@ if __name__ == "__main__":
   df = load_data(dep_file = args.tweets_file, annotations = args.annotations)
   
   # replace column of tokens with preprocessed ones 
-  df['toks'] = df['toks_pos'].apply(preprocessing,rm_url = args.rm_url, red_len = args.red_len,lower = args.lower,
+  df['proc_toks'] = df['toks_pos'].apply(preprocessing,rm_url = args.rm_url, red_len = args.red_len,lower = args.lower,
     rm_sw = args.rm_sw, rm_tags_mentions = args.rm_tagsmen, stem = args.stem) 
   # still dataframe with all columns
   
@@ -133,7 +133,7 @@ if __name__ == "__main__":
   np.random.seed(42)
   df = df.reindex(np.random.permutation(df.index))
   
-  tweets = list(df['toks'])
+  tweets = list(df['proc_toks'])
   labels = list(df['label'])
   pos = list(df['pos'])
   deps = list(df['dep'])

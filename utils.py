@@ -25,6 +25,12 @@ def plot_confusion_matrix(cm, classes,
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
+    
+    :params:
+      cm (np.ndarray) : confusion matrix
+      normalize (bool) : normalize counts by # of class instance
+      title (string) : plot title
+      cmap (matplotlib.colors.LinearSegmentedColormap) : color map for image
     """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
@@ -79,24 +85,37 @@ def store_hyperparameters(clf,text):
     
 def by_class_error_analysis(df,y_true,y_pred,limit,error,out_path):
   """
-  False Positive, False Negative estimation in a one-vs-rest way.
+  Write to file randomly selected False Positive or False Negative. For multiclass FP,FN are estimated in one-vs-all.
+  
+  :params:
+    df (pandas.DataFrame) : data set having `toks` column
+    y_true (array) : original labels
+    y_pred (array) : predicted labels
+    limit (int) : # of FP/FN to be printed
+    error (str) : type of misclassification. Choices : `FP` (false positive), `FN` (false negative)
+    out_path (str) : folder where errors will be saved
   """
+  
+  errors = ['FP','FN']
+  
+  assert error in errors, "Invalid error choice! Received `{}` :  choose from `{}`! ".format(error,errors)
   
   if error == 'FP':
     out_file = open(os.path.join(out_path, 'error.FP'),'w+') 
-  else :
+  elif error == 'FN' :
     out_file = open(os.path.join(out_path, 'error.FN'),'w+')
   
   unique_labels = np.unique(y_true)
   
   y_true = np.asarray(y_true)
+  y_pred = np.asarray(y_pred)
   
   for label in unique_labels:
     out_file.write("{}\n".format(str(label).upper()))
     
     if error == 'FP':
       error_idx = np.where((y_true!=label) & (y_pred==label))[0] #take indices
-    else:
+    elif error == 'FN':
       error_idx = np.where((y_true==label) & (y_pred!=label))[0] #take indices
             
     if len(error_idx) < 1:
