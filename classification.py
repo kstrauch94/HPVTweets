@@ -18,6 +18,7 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import precision_recall_fscore_support as prfs
 from collections import OrderedDict
 from sklearn.model_selection import GridSearchCV,ShuffleSplit
+from sklearn.metrics import classification_report
 
 
 
@@ -199,11 +200,15 @@ def kfold_cross_validation(clf,X,y,k,sorted_labels_name,estimator = 'keras',verb
   
   logger.info("Starting Cross Validation process...")
   
+  predictions = []
+  test_indices = []
+  
   for train_index, test_index in kf.split(X):
     train_id = list(train_index)
     test_id = list(test_index)
     X_train, X_test = X[train_id,:], X[test_id,:]
     y_train, y_test = y[train_index], y[test_index]
+    
     
     if verbose:
       logger.info("Fold {}\n".format(fold))
@@ -217,41 +222,65 @@ def kfold_cross_validation(clf,X,y,k,sorted_labels_name,estimator = 'keras',verb
     
     y_pred = clf_fold.predict(X_test)
     
-      
-    by_class_scores = prfs(y_pred,y_test, labels = unique_labels if estimator == 'scikit-learn' else None)
+    predictions.append(y_pred)
+    test_indices.append(test_id)
     
-    scores_micro_avg.append(np.expand_dims(prfs(y_pred,y_test,average = 'micro')[:-1],0))
-    
-    scores_macro_avg.append(np.expand_dims(prfs(y_pred,y_test,average = 'macro')[:-1],0))
-  
-    by_class_precision_scores.append(np.expand_dims(by_class_scores[0],0))
-                
-    by_class_recall_scores.append(np.expand_dims(by_class_scores[1],0))
-        
-    by_class_f1_scores.append(np.expand_dims(by_class_scores[2],0))
-            
     fold += 1
     
-  if verbose :
+  test_indices = np.concatenate(test_indices)  
+  inv_test_indices = np.empty(len(test_indices), dtype=int)
+  inv_test_indices[test_indices] = np.arange(len(test_indices))
+  predictions = np.concatenate(predictions)
+  predictions = predictions[inv_test_indices]
+  
+  
+  scores_micro = prfs(y_true = y, y_pred = predictions, average = 'micro')
+  print("Micro averaged scores {}".format(scores_micro))
+  scores_macro = prfs(y_true = y, y_pred = predictions, average = 'macro')
+  print("Macro averaged scores {}".format(scores_macro))
+  
+  cr = classification_report(y_true = y, y_pred = predictions)
+  print("Classification report:\n{}".format(cr))
     
-    by_class_scores_dict = defaultdict(OrderedDict)
+
     
-    mean_precision_by_class = np.mean(np.concatenate(by_class_precision_scores,0),0)
-    mean_recall_by_class = np.mean(np.concatenate(by_class_recall_scores,0),0)
-    mean_f1_by_class = np.mean(np.concatenate(by_class_f1_scores,0),0)
     
-    by_class_scores_dict['P'] = {sorted_labels_name[i] : mean_precision_by_class[i] for i in range(len(sorted_labels_name))}
-    by_class_scores_dict['R'] = {sorted_labels_name[i] : mean_recall_by_class[i] for i in range(len(sorted_labels_name))}
-    by_class_scores_dict['F1'] = {sorted_labels_name[i] : mean_f1_by_class[i] for i in range(len(sorted_labels_name))}
     
-    visualize_results = pandas.DataFrame.from_dict(by_class_scores_dict, orient = 'columns')
-    logger.info("By class mean scores  :\n {}".format(visualize_results))
       
-  m_micro_avg = np.mean(np.concatenate(scores_micro_avg,0),0)
-  m_macro_avg = np.mean(np.concatenate(scores_macro_avg,0),0)
+    #by_class_scores = prfs(y_pred,y_test, labels = unique_labels if estimator == 'scikit-learn' else None)
     
-  logger.info("{0} fold CV micro average - P : {1} - R : {2} - F1 : {3}".format(k,m_micro_avg[0],m_micro_avg[1],m_micro_avg[2]))
-  logger.info("{0} fold CV macro average - P : {1} - R : {2} - F1 : {3}".format(k,m_macro_avg[0],m_macro_avg[1],m_macro_avg[2]))
+    #scores_micro_avg.append(np.expand_dims(prfs(y_pred,y_test,average = 'micro')[:-1],0))
+    
+    #scores_macro_avg.append(np.expand_dims(prfs(y_pred,y_test,average = 'macro')[:-1],0))
+  
+    #by_class_precision_scores.append(np.expand_dims(by_class_scores[0],0))
+                
+    #by_class_recall_scores.append(np.expand_dims(by_class_scores[1],0))
+        
+    #by_class_f1_scores.append(np.expand_dims(by_class_scores[2],0))
+            
+    #fold += 1
+    
+  #if verbose :
+    
+    #by_class_scores_dict = defaultdict(OrderedDict)
+    
+    #mean_precision_by_class = np.mean(np.concatenate(by_class_precision_scores,0),0)
+    #mean_recall_by_class = np.mean(np.concatenate(by_class_recall_scores,0),0)
+    #mean_f1_by_class = np.mean(np.concatenate(by_class_f1_scores,0),0)
+    
+    #by_class_scores_dict['P'] = {sorted_labels_name[i] : mean_precision_by_class[i] for i in range(len(sorted_labels_name))}
+    #by_class_scores_dict['R'] = {sorted_labels_name[i] : mean_recall_by_class[i] for i in range(len(sorted_labels_name))}
+    #by_class_scores_dict['F1'] = {sorted_labels_name[i] : mean_f1_by_class[i] for i in range(len(sorted_labels_name))}
+    
+    #visualize_results = pandas.DataFrame.from_dict(by_class_scores_dict, orient = 'columns')
+    #logger.info("By class mean scores  :\n {}".format(visualize_results))
+      
+  #m_micro_avg = np.mean(np.concatenate(scores_micro_avg,0),0)
+  #m_macro_avg = np.mean(np.concatenate(scores_macro_avg,0),0)
+    
+  #logger.info("{0} fold CV micro average - P : {1} - R : {2} - F1 : {3}".format(k,m_micro_avg[0],m_micro_avg[1],m_micro_avg[2]))
+  #logger.info("{0} fold CV macro average - P : {1} - R : {2} - F1 : {3}".format(k,m_macro_avg[0],m_macro_avg[1],m_macro_avg[2]))
     
     
     

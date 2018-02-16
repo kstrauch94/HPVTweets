@@ -134,7 +134,7 @@ class SentenceCNN(object):
     
     dropout = Dropout(0.5)(merged)
     
-    dense_pre_out = Dense(200, activation = "relu", name = "dense_layer_pre_out")(dropout)
+    dense_pre_out = Dense(500, activation = "relu", name = "dense_layer_pre_out")(dropout)
     
     if self.mode == "plain":
   
@@ -163,7 +163,7 @@ class SentenceCNN(object):
   @timeit 
   def fit(self,X,y):
     
-    self.model.fit(X, y, batch_size= self.batch,epochs= self.epochs, verbose = 0)
+    self.model.fit(X, y, batch_size= self.batch,epochs= self.epochs, verbose = 1)
 
   
   def predict(self,xs):

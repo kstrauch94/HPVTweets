@@ -116,25 +116,25 @@ def experiment_3(texts,labels,we_file,sorted_label_names,n_folds = 10):
   
   logger.info("Initialiazing CNN architecture for multiclass classification task...")
   
-  cnn_plain = SentenceCNN(ngrams = [3,4,5],num_filters = 12 ,mode = 'plain',batch = 32 ,epochs = 20)
+  cnn_plain = SentenceCNN(ngrams = [2,3,4],num_filters = 12 ,mode = 'plain',batch = 32 ,epochs = 20)
   X_cnn = cnn_plain.init_model(texts,we_file)
   cnn_plain.compile_model(X_cnn, categorical_ys)
   
-  logger.info("Initialiazing CNN architecture for multilabel classification task...")
+#  logger.info("Initialiazing CNN architecture for multilabel classification task...")
   
-  cnn_multilabel = SentenceCNN(ngrams = [3,4,5],num_filters = 12 ,mode = 'multilabel',batch = 32 ,epochs = 20)
-  cnn_multilabel.init_from_model(cnn_plain)
-  cnn_multilabel.compile_model(X_cnn,multilable_ys)
+#  cnn_multilabel = SentenceCNN(ngrams = [3,4,5],num_filters = 12 ,mode = 'multilabel',batch = 32 ,epochs = 20)
+#  cnn_multilabel.init_from_model(cnn_plain)
+#  cnn_multilabel.compile_model(X_cnn,multilable_ys)
       
   logger.info("{} CV - Multiclass CNN".format(n_folds))
   
   kfold_cross_validation(clf = cnn_plain, X = X_cnn, y = categorical_ys,
         sorted_labels_name = sorted_label_names,k = n_folds , estimator = 'keras',verbose = True)
   
-  logger.info("{} CV - Multilabel CNN".format(n_folds))
+#  logger.info("{} CV - Multilabel CNN".format(n_folds))
   
-  kfold_cross_validation(clf = cnn_multilabel,X = X_cnn,y = multilable_ys,
-                         sorted_labels_name = sorted_label_names,k=n_folds,verbose = True)
+#  kfold_cross_validation(clf = cnn_multilabel,X = X_cnn,y = multilable_ys,
+#                         sorted_labels_name = sorted_label_names,k=n_folds,verbose = True)
   
   
 def experiment_4(X,labels,sorted_label_names,n_folds = 10):
@@ -164,7 +164,7 @@ if __name__ == "__main__":
   HUNSPELL = ['/usr/share/hunspell/en_US.dic', '/usr/share/hunspell/en_US.aff']
    
   TWITTER_SSWE = 'data/we/sswe-u_tang.txt'
-  TWITTER_WE = 'data/we/glove.twitter.27B.50d.txt'
+  TWITTER_WE = 'data/we/glove.twitter.27B.100d.txt'
   TWEET_CLUSTERS = './data/50mpaths2'
   
   BINGLIU_POS = './data/bingliu_lexicons/bingliuposs.txt'
