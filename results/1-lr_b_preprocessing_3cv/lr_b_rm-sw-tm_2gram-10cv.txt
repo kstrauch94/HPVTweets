@@ -1,0 +1,48 @@
+classifier: lr_b
+class weights: False
+Hyperparameters: C = 1.0
+
+10 fold cross validation
+preprocessing
+remove url : False
+reduce length : True
+lowercase : True
+remove stopwords : True
+remove tags and mentions : True
+stem : False
+features
+ngram_range: 2
+tfidf: False
+tsvd : -1
+
+cluster: False
+postags: False
+senti net: False
+senti words: False
+subjective score: False
+bing liu sent words: False
+dependency sent words: False
+negated words: False
+scaled features: False
+Feature matrix shape: (4636, 29721)
+
+average fit_time : 0.6044279734293619
+average score_time : 0.02532203992207845
+average test_precision_macro : 0.6408631134996136
+average test_precision_micro : 0.7019087683058446
+average test_f1_macro : 0.5298567219150739
+average test_recall_macro : 0.5084906399842479
+average test_recall_micro : 0.7019087683058446
+average test_f1_micro : 0.7019087683058446
+              precision    recall  f1-score   support
+
+     NegCost       1.00      0.67      0.80         3
+ NegEfficacy       1.00      0.18      0.31        38
+   NegOthers       0.64      0.29      0.40       347
+NegResistant       0.00      0.00      0.00         3
+   NegSafety       0.77      0.74      0.76       701
+     Neutral       0.60      0.60      0.60      1132
+    Positive       0.70      0.69      0.69      1002
+   Unrelated       0.75      0.89      0.81      1410
+
+ avg / total       0.70      0.70      0.69      4636

@@ -1,43 +1,36 @@
 from load import load_data
 from preprocess import preprocessing
-from tweets_feature_extractor import build_tokenizer
 from tweets_feature_extractor import build_pipeline_steps
-from tweets_classification import TweetClassifierH, TweetClassifierBaseSVM, TweetClassifierKNN, TweetClassifierLR, TweetClassifierRF
+from tweets_classification import optimize_hp,HierarchicalClassifier
 
-from sklearn.model_selection import cross_val_score
+from sklearn import svm
+from sklearn.linear_model import LogisticRegression
+
 from sklearn.model_selection import cross_validate, cross_val_predict
 
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 
 import numpy as np
 import argparse
-import copy
-import sys
+import os
 
+from utils import plot_confusion_matrix,store_hyperparameters,by_class_error_analysis
+import matplotlib.pyplot as plt
 
-SVM_B = "svm_b"
-KNN_B = "knn_b"
+L_SVM_B = "l_svm_b"
+RBF_SVM_B = "rbf_svm_b"
+L_SVM_H = "l_svm_h"
+RBF_SVM_H = "rbf_svm_h"
 LR_B  = "lr_b"
-RF_B  = "rf_b"
-
-SVM_H = "svm_h"
-KNN_H = "knn_h"
 LR_H  = "lr_h"
-RF_H  = "rf_h"
 
-KNN_2SVM = "knn_2svm"
-LR_2SVM  = "lr_2svm"
-LR_SVM_LR= "lr_svm_lr"
+L_SVM_PARAMS = [{'C' : [1,64, 128, 256, 512, 1024]}]
+RBF_SVM_PARAMS = [{'gamma' : [2e-7, 2e-6, 2e-5, 2e-4, 2e-3]},{'C' : [1,64, 128, 256, 512, 1024]}]
+LR_PARAMS = [{'C' : [1,64, 128, 256, 512, 1024]}]
 
 
-CV = "cv"
+clf_choices = [L_SVM_B,RBF_SVM_B,L_SVM_H,RBF_SVM_H,LR_B,LR_H]
 
-clf_choices = [SVM_B, KNN_B, LR_B, RF_B, KNN_H, SVM_H, LR_H, RF_H, KNN_2SVM, LR_2SVM, LR_SVM_LR, CV]
-
-C = "C"
-GAMMA = "GAMMA"
-
-NEIGHBORS = "neighbors"
 
 def parse_arguments():
   """
@@ -52,302 +45,319 @@ def parse_arguments():
   
   preprcessing_group = parser.add_argument_group('preprocessing')
   
-  preprcessing_group.add_argument("--rm-url", action="store_false", help="Remove urls from tweet. If not urls will be converted to `url` string")
+  preprcessing_group.add_argument("--rm-url", action="store_true", help="Remove urls from tweet. If not urls will be converted to `url` string")
   preprcessing_group.add_argument("--red-len", action="store_false", help="Reduce words length. E.g. faaantastic -> fantaastic")
   preprcessing_group.add_argument("--lower", action="store_false", help="Lowercase all words but emoticons")
-  preprcessing_group.add_argument("--rm-sw", action="store_false", help="Remove stopwords")
+  preprcessing_group.add_argument("--rm-sw", action="store_true", help="Remove stopwords")
+  preprcessing_group.add_argument("--rm-tagsmen", action="store_true", help="Remove tags and mentions from tweet")
+  preprcessing_group.add_argument("--stem", action="store_true", help="Stem words")
   
   classifier_group = parser.add_argument_group('classifier')
   
-  classifier_group.add_argument("-c", "--classifier", choices=clf_choices, default=SVM_H, help="Choose classifier")
-  classifier_group.add_argument("--cv-k", type=int, default=10, help="choose k for a k-fold cross validation")
-  classifier_group.add_argument("--dim-reduction", type=int, default=-1, help="apply dimensionality reduction to specified value with singular value decomposition (SVD)")
-  classifier_group.add_argument("--tfidf", action="store_true", help="apply tfidf to feature vector")
-  classifier_group.add_argument("--neighbors", type=int, default=10, help="Neighbors parameter for KNN classifier")
+  classifier_group.add_argument("-c", "--classifier", choices=clf_choices, default=L_SVM_B, help="Choose classifier")
+  classifier_group.add_argument("--class-weights", action = "store_true", help="Apply class weights to classifier (inversely proportional to class frequencies in the input)")
+  classifier_group.add_argument("--optim-single",action = "store_true", help="Optimize hyperparameters for single classifier")
   
   
-  preprocessing_group = parser.add_argument_group('preprocessing')
+  features_group = parser.add_argument_group('preprocessing')
   
-  preprocessing_group.add_argument("--alt-preprocess", action="store_true", help="Use alternate preprocessing. This replaces mentions by @ and hashtags by # instead of deleting them.")
-  preprocessing_group.add_argument("--bigrams", action="store_true", help="tokenizer function will build bigrams")
-  preprocessing_group.add_argument("--clusters", action="store_true", help="tokenizer function will build clusters")
-  preprocessing_group.add_argument("--postags", action="store_true", help="tokenizer function will build postags")
-  preprocessing_group.add_argument("--postags-bg", action="store_true", help="tokenizer function will build postags bigrams")
-  preprocessing_group.add_argument("--length", action="store_true", help="Length feature will be added to the vector")
-  preprocessing_group.add_argument("--sentnet", action="store_true", help="Senti net feature will be added to the vector")
-  preprocessing_group.add_argument("--sentiwords", action="store_true", help="tokenizer function will build senti net words")
-  preprocessing_group.add_argument("--subjscore", action="store_true", help="Subjectivity score feature will be added to the vector")
-  
+  features_group.add_argument("--ngram-range",type = int, default = 2, help="Max value for building ngram matrix. E.g. `2` : bigrams")
+  features_group.add_argument("--tfidf", action="store_true", help="apply tfidf to feature vector")
+  features_group.add_argument("--tsvd", type=int, default=-1, help="apply dimensionality reduction to specified value with singular value decomposition (SVD)")
+  features_group.add_argument("--clusters", action="store_true", help="tokenizer function will build clusters")
+  features_group.add_argument("--postags", action="store_true", help="tokenizer function will build postags")
+  features_group.add_argument("--sentnet", action="store_true", help="Senti net feature will be added to the vector")
+  features_group.add_argument("--sentiwords", action="store_true", help="tokenizer function will build senti net words")
+  features_group.add_argument("--subjscore", action="store_true", help="Subjectivity score feature will be added to the vector")
+  features_group.add_argument("--bingliusent", action="store_true", help="Positive/Negative words features from Bing Liu")
+  features_group.add_argument("--depsent", action="store_true", help="Dependencies feature for Positive/Negative words from Bing Liu")
+  features_group.add_argument("--negwords", action="store_true", help="Negated words features")
+  features_group.add_argument("--scale", action="store_true", help="Scale feature matrix")
+  features_group.add_argument("--bigramsent", action="store_true", help="Bigram sentiment score feature will be added to the vector")
+  features_group.add_argument("--unigramsent", action="store_true", help="Unigram sentiment score feature will be added to the vector")
+  features_group.add_argument("--argscores", action="store_true", help="Argument lexicon score features will be added to the vector")
+
+
   
   files_group = parser.add_argument_group('files')
   
-  files_group.add_argument("--tweets-file", default="Data\\tweet_for_dp.txt.predict", 
-                              help="path to file containing tweet (dependecy parsing applied). Default = Data\merged_tweets.tsv")
-  files_group.add_argument("--annotations", default="Data\\TweetsAnnotation.txt",
+  files_group.add_argument("--tweets-file", required = True, 
+                              help="path to file containing tweet (dependecy parsing applied)")
+  
+  files_group.add_argument("--annotations", required = True,
                               help="path to file containing tweet annotations")
-  files_group.add_argument("--clusters-file", default="Data\\tweet_word_clusters.txt", 
-                              help="path to file containing word clusters. Default = Data\\tweet_word_clusters.txt")                     
+  
+  files_group.add_argument("--clusters-file", default="{}".format(os.path.join("data","50mpaths2")), 
+                              help="path to file containing word clusters. Default = data\\50mpaths2")
+  
+  files_group.add_argument("--subjscore-file", default = '{}'.format(os.path.join("data","subj_score.txt")),
+                              help="path to file subjectivity scores file. Default = data\\subj_score.txt")
+  
+  files_group.add_argument("--bingliu-pos", default = "{}".format(os.path.join("data","bingliuposs.txt")),
+                              help="path to file containing bing liu positive words. Default = data\\bingliuposs.txt")
+  
+  files_group.add_argument("--bingliu-neg",default = "{}".format(os.path.join("data","bingliunegs.txt")),
+                              help="path to file containing bing liu negative words. Default = data\\bingliunegs.txt")
+                              
+  files_group.add_argument("--bigram-sent-file",default = "{}".format(os.path.join("data","hash-sentiments","bigrams-pmilexicon.txt")),
+                              help="path to file containing bigrams hashtag sentiment scores. Default = data\\hash-sentiments\\bigrams-pmilexicon.txt")  
+
+  files_group.add_argument("--unigram-sent-file",default = "{}".format(os.path.join("data","hash-sentiments","unigrams-pmilexicon.txt")),
+                              help="path to file containing unigram hashtag sentiment scores. Default = data\\hash-sentiments\\unigrams-pmilexicon.txt")
+                        
+  files_group.add_argument("--arg-lexicon-folder",default = "{}".format(os.path.join("data","arg-lexicon")),
+                              help="path to folder containing argument lexicon files. (please exclude trailing \\ after folder name) Default = data\\arg-lexicon")
+                              
                               
   record_group = parser.add_argument_group('record')
   
-  record_group.add_argument("--save", action="store_true", help="If true it writes a file with information about the test, else it just prints it")
+  record_group.add_argument("--save", type = str, default = False, help="If true it writes a file with information about the test, else it just prints it")
+  record_group.add_argument("--confusion-matrix",action = "store_true", help="Display confusion matrix")
+  record_group.add_argument("--error-analysis", type = str, default = False, help="Save to a file (path to be provided) tweets misclassified")
+  
   
   return parser.parse_args()
 
 if __name__ == "__main__":
   
-    args = parse_arguments()
-    
-    df = load_data(dep_file = args.tweets_file, annotations = args.annotations)
-    
-    # replace column of tokens with preprocessed ones 
-    df['toks'] = df['toks_pos'].apply(preprocessing,rm_url = False, red_len = True, lower = True, rm_sw = False, rm_tags_mentions = True)    
-    # still dataframe with all columns
-        
-    tweets = list(df['toks'])
-    pos_tweets = list(zip(list(df["pos"]), tweets))
-    labels = list(df['label']) 
-    
-    print("Shuffling data")
-    df = df.reindex(np.random.permutation(df.index))
-    
-    clusters_path = args.clusters_file
-    tweets_path= args.tweets_file
-    annotations_path = "Data\\TweetsAnnotation.txt"
+  args = parse_arguments()
+  
+  df = load_data(dep_file = args.tweets_file, annotations = args.annotations)
+  
+  # replace column of tokens with preprocessed ones 
+  df['proc_toks'] = df['toks_pos'].apply(preprocessing,rm_url = args.rm_url, red_len = args.red_len,lower = args.lower,
+    rm_sw = args.rm_sw, rm_tags_mentions = args.rm_tagsmen, stem = args.stem) 
+  # still dataframe with all columns
+  
+  print("Shuffling data")
+  np.random.seed(42)
+  df = df.reindex(np.random.permutation(df.index))
+  
+  tweets = list(df['proc_toks'])
+  labels = list(df['label'])
+  pos = list(df['pos'])
+  deps = list(df['dep'])
+  
+  cl_weight = 'balanced' if args.class_weights else None
+  
+  
+  pipeline_steps =  build_pipeline_steps(ngram_range = args.ngram_range,
+                           do_tfidf = args.tfidf,
+                           do_tsvd = args.tsvd,
+                           do_neg_words = args.negwords,
+                           do_bingliu = args.bingliusent,
+                           do_clusters = args.clusters,
+                           do_postags = args.postags,
+                           do_sentnet = args.sentnet,
+                           do_subjscore = args.subjscore,
+                           do_dep_sent = args.depsent,
+                           do_sentiwords = args.sentiwords,
+                           do_scaling = args.scale,
+                           do_bigram_sent = args.bigramsent,
+                           do_unigram_sent = args.unigramsent,
+                           do_argument_scores = args.argscores,
+                           deps = deps, 
+                           stem = args.stem,
+                           bingliu_pos_path = args.bingliu_pos,
+                           bingliu_neg_path = args.bingliu_neg,
+                           clusters_path = args.clusters_file,
+                           bigram_sent_file = args.bigram_sent_file,
+                           unigram_sent_file = args.unigram_sent_file,
+                           arguments_folder = args.arg_lexicon_folder,
+                           pos_tokens = pos,
+                           subj_score_file = args.subjscore_file)
+  
+  
 
-    all_svm_C = 512
-    related_svm_C = 128
-    negative_svm_C = 512
-
-    all_svm_gamma = 0.00002
-    related_svm_gamma = 0.0002
-    negative_svm_gamma = 0.0002
-
-    clist = [all_svm_C, related_svm_C, negative_svm_C]
-    gammalist = [all_svm_gamma, related_svm_gamma, negative_svm_gamma]
+  X = pipeline_steps.fit_transform(tweets) 
+  
+  print("Resulting feature matrix shape {}".format(X.shape))
+  
+  
+  if args.optim_single:
     
+    print("Optimizing hyperparameters of : {} with 3-fold CV".format(args.classifier))
 
-    tokenizer = build_tokenizer(do_bigrams=args.bigrams, do_clusters=args.clusters, do_postags=args.postags, 
-                                do_postags_bg=args.postags_bg, do_sentiwords=args.sentiwords, cluster_lookup_file=clusters_path)
+      
+  if args.classifier == L_SVM_B:
+      
+    clf = svm.LinearSVC(class_weight = cl_weight)
     
-    pipeline_steps = build_pipeline_steps(tokenizer=tokenizer, preprocess=lambda pos_text : pos_text, do_length=args.length, 
-                                    do_tfidf=args.tfidf, do_sentnet=args.sentnet, do_subjscore=args.subjscore, dim_reduction=args.dim_reduction)
+    if args.optim_single:
+      
+      _ , clf = optimize_hp(clf,X,labels,L_SVM_PARAMS)
+      
+  elif args.classifier == RBF_SVM_B:
+      
+    clf = svm.LinearSVC(class_weight = cl_weight)
+    
+    if args.optim_single:
+      
+      _ , clf = optimize_hp(clf,X,labels,RBF_SVM_PARAMS)
+    
+  elif args.classifier == LR_B:
+      
+    clf = LogisticRegression(class_weight = cl_weight )
+    
+    if args.optim_single:
+    
+      _ ,clf = optimize_hp(clf,X,labels,LR_PARAMS)
+    
+  elif args.classifier == L_SVM_H:
+
+    clf = HierarchicalClassifier(clfs = [svm.LinearSVC(class_weight = cl_weight) for _ in range(3)],
+                                 params = [L_SVM_PARAMS] * 3)
+    
+    if args.optim_single:
+      best_f1s = clf.optimize_classifiers(X,labels)
+      
+  elif args.classifier == RBF_SVM_H:
+
+    clf = HierarchicalClassifier(clfs = [svm.SVC(C = 256, class_weight = cl_weight) for _ in range(3)],
+                                 params = [RBF_SVM_PARAMS] * 3)
+    
+    if args.optim_single:
+      best_f1s = clf.optimize_classifiers(X,labels)
+    
+  elif args.classifier == LR_H:
+    clf = HierarchicalClassifier(clfs = [LogisticRegression(class_weight = cl_weight) for _ in range(3)],
+                                 params = [LR_PARAMS] * 3)
+    
+    if args.optim_single:
+      best_f1s = clf.optimize_classifiers(X,labels)
+      
+  print("Evaluating {} performances with 10 fold cross validation".format(args.classifier))  
+      
+  scoring = ["f1_micro", "f1_macro", "precision_micro", "precision_macro", "recall_micro", "recall_macro"]
+  
+  f1_scores = cross_validate(clf, X, labels, cv=10, scoring=scoring, return_train_score=False)
+
+  y_pred = cross_val_predict(clf, X, labels, cv=10)
+  
+  report = classification_report(labels, y_pred)
+      
+  text = []
+  text.append("classifier: {}\n".format(args.classifier))
+  text.append("class weights: {}\n".format(args.class_weights))
+  
+  store_hyperparameters(clf,text)
+  
+  text.append("\n10 fold cross validation\n")
+  
+  text.append("preprocessing\n")
+  text.append("remove url : {}\n".format(args.rm_url))
+  text.append("reduce length : {}\n".format(args.red_len))
+  text.append("lowercase : {}\n".format(args.lower))
+  text.append("remove stopwords : {}\n".format(args.rm_sw))
+  text.append("remove tags and mentions : {}\n".format(args.rm_tagsmen))
+  text.append("stem : {}\n".format(args.stem))
+  
+  text.append("features\n")
+  text.append("ngram_range: {}\n".format(args.ngram_range))
+  text.append("tfidf: {}\n".format(args.tfidf))
+  text.append("tsvd : {}\n\n".format(args.tsvd))
+  text.append("cluster: {}\n".format(args.clusters))
+  text.append("postags: {}\n".format(args.postags))
+  text.append("senti net: {}\n".format(args.sentnet))
+  text.append("senti words: {}\n".format(args.sentiwords))
+  text.append("subjective score: {}\n".format(args.subjscore))
+  text.append("bing liu sent words: {}\n".format(args.bingliusent))
+  text.append("dependency sent words: {}\n".format(args.depsent))
+  text.append("negated words: {}\n".format(args.negwords))
+  text.append("scaled features: {}\n".format(args.scale))
+  text.append("bigram sentiment scores: {}\n".format(args.bigramsent))
+  text.append("unigram sentiment scores: {}\n".format(args.unigramsent))
+  text.append("argument lexicon scores: {}\n".format(args.argscores))
+
+  
+  text.append("Feature matrix shape: {}\n".format(X.shape))
+
+  text.append("\n")
+      
+  for score_name, scores in f1_scores.items():
+      text.append("average {} : {}\n".format(score_name,sum(scores)/len(scores)))
+      
+  text.append(report)
+  
+  for line in text:
+      print(line)
    
+      
+  # write text to file to keep a record of stuff
+  if args.save:
+    preprocess = "rm"
+    if args.rm_url:
+      preprocess += "-url"
+    if args.rm_sw:
+      preprocess += "-sw"
+    if args.rm_tagsmen:
+      preprocess += "-tm"
+    if args.stem: 
+      preprocess += "-stem"
+ 
+    features = ""
+    features += "{}gram-".format(args.ngram_range)
+    if args.tfidf:
+        features = "tfidf-"
+    if args.tsvd > 0:
+        features += "tsvd-{}-".format(args.tsvd)
+    if args.clusters:
+        features += "clusters-"
+    if args.postags:
+        features += "postags-"
+    if args.sentnet:
+        features += "sentnet-"
+    if args.sentiwords:
+        features += "sentiwords-"
+    if args.subjscore:
+        features += "subjscore-"
+    if args.bingliusent:
+        features += "bingliu-"
+    if args.depsent:
+        features += "dep-"
+    if args.negwords:
+        features += "neg-"
+    if args.scale:
+        features += "scale-"
+    if args.optim_single:
+        features += "optim-"
+    if args.bigramsent:
+        features += "bigramsent-"
+    if args.unigramsent:
+        features += "unigramsent-"
+    if args.argscores:
+        features += "argscores-"
+    
+    filename = "{}_{}_{}10cv.txt".format(args.classifier,preprocess,features)
+    
+    if not os.path.exists(args.save):
+      os.mkdir(args.save)
+    
+    with open(os.path.join(args.save,filename), "w") as f:
+        f.writelines(text)
+        
+  if args.confusion_matrix:
+  
+    cm = confusion_matrix(labels,y_pred)
+    np.set_printoptions(precision=2)
+    plt.figure()
+    plot_confusion_matrix(cm, classes=np.unique(labels),
+                      title='Confusion Matrix')
+    
+    
+    plt.savefig('confustion_matrix.png')
+    
+  if args.error_analysis:
+    
+    if not os.path.exists(args.error_analysis):
+      os.mkdir(args.error_analysis)
+    
+    by_class_error_analysis(df = df, y_true = labels, y_pred = y_pred, limit = 10, error = 'FP', out_path = args.error_analysis )
+    by_class_error_analysis(df = df, y_true = labels, y_pred = y_pred, limit = 10, error = 'FN', out_path = args.error_analysis )
+    
+  
+        
 
-    """
-    #test
-    # leave this :) I'll use this to test the functions
-    #print(pos_tweets[:3])
-    #from tweets_feature_extractor import tweets_length
-    #print(tweets_length(pos_tweets[:3]))
-    
-    #from tweets_feature_extractor import net_sentiment
-    #print(net_sentiment(pos_tweets[:3]))
-    
-    #from tweets_feature_extractor import sub_score
-    #print(sub_score(pos_tweets[:3]))
-    
-    print("TOK TOK TOK")
-    print(pos_tweets[2])
-    print(tokenizer(pos_tweets[2]))
-    
-    sys.exit()   
-    
-    #    
-   #"""
-
-    kwargs_pre = {"pipeline_steps": pipeline_steps}
-    kwargs = {1: copy.copy(kwargs_pre), 2: copy.copy(kwargs_pre), 3: copy.copy(kwargs_pre)}
-    
-    
-    if args.classifier == SVM_B:
-        clf = TweetClassifierBaseSVM(**kwargs_pre)
-    
-    elif args.classifier == KNN_B:
-        kwargs_pre.update({NEIGHBORS: args.neighbors})
-        clf = TweetClassifierKNN(**kwargs_pre)  
-
-    elif args.classifier == LR_B:
-        clf = TweetClassifierLR(**kwargs_pre)
-        
-    elif args.classifier == RF_B:
-        clf = TweetClassifierRF(**kwargs_pre)          
-    
-    elif args.classifier == SVM_H:
-        kwargs[1].update({C: all_svm_C, GAMMA: all_svm_gamma})
-        kwargs[2].update({C: related_svm_C, GAMMA: related_svm_gamma})
-        kwargs[3].update({C: negative_svm_C, GAMMA: negative_svm_gamma})
-        clf = TweetClassifierH(lambda x: TweetClassifierBaseSVM, kwargs)
-        
-    elif args.classifier == KNN_H:
-        kwargs[1].update({NEIGHBORS: args.neighbors})
-        kwargs[2].update({NEIGHBORS: args.neighbors})
-        kwargs[3].update({NEIGHBORS: args.neighbors})
-        clf = TweetClassifierH(lambda x: TweetClassifierKNN, kwargs)
-        
-    elif args.classifier == LR_H:
-        #kwargs[1].update()
-        #kwargs[2].update()
-        #kwargs[3].update()
-        clf = TweetClassifierH(lambda x: TweetClassifierKNN, kwargs)
-        
-    elif args.classifier == RF_H:
-        #kwargs[1].update()
-        #kwargs[2].update()
-        #kwargs[3].update()
-        clf = TweetClassifierH(lambda x: TweetClassifierRF, kwargs)
-
-    elif args.classifier == KNN_2SVM:
-        kwargs[1].update({NEIGHBORS: args.neighbors})
-        kwargs[2].update({C: related_svm_C, GAMMA: related_svm_gamma})
-        kwargs[3].update({C: negative_svm_C, GAMMA: negative_svm_gamma})
-        
-        def get_clf(tier):
-            if tier == 1: return TweetClassifierKNN
-            if tier == 2 or tier == 3: return TweetClassifierBaseSVM
-                
-        clf = TweetClassifierH(get_clf, kwargs)
-        
-    elif args.classifier == LR_2SVM:
-        #kwargs[1].update()
-        kwargs[2].update({C: related_svm_C, GAMMA: related_svm_gamma})
-        kwargs[3].update({C: negative_svm_C, GAMMA: negative_svm_gamma})
-        
-        def get_clf(tier):
-            if tier == 1: return TweetClassifierLR
-            if tier == 2 or tier == 3: return TweetClassifierBaseSVM
-                
-        clf = TweetClassifierH(get_clf, kwargs)
-        
-    elif args.classifier == LR_SVM_LR:
-        #kwargs[1].update()
-        kwargs[2].update({C: related_svm_C, GAMMA: related_svm_gamma})
-        #kwargs[3].update()
-        
-        def get_clf(tier):
-            if tier == 1: return TweetClassifierLR
-            if tier == 2: return TweetClassifierBaseSVM
-            if tier == 3: return TweetClassifierLR
-                
-        clf = TweetClassifierH(get_clf, kwargs)
-        
-    elif args.classifier == CV:
-    
-        from sklearn.model_selection import GridSearchCV
-        
-        kwargs[1].update({C: all_svm_C, GAMMA: all_svm_gamma})
-        kwargs[2].update({C: related_svm_C, GAMMA: related_svm_gamma})
-        kwargs[3].update({C: negative_svm_C, GAMMA: negative_svm_gamma})
-        
-        kwargs_list = []
-        for newC in [64,128,256,512,1024]: # this loop creates the list of arguments for the classifier.
-            copied_arg = copy.deepcopy(kwargs)# first copy the actual argument
-            copied_arg[1].update({C: newC})   # change the C value of the first SVM to the one to test
-            kwargs_list.append(copied_arg)    # add to list
-        
-        params = {"kwargs": kwargs_list} # now create the parameter "grid"                                     
-        
-        clf = GridSearchCV(TweetClassifierH(lambda x: TweetClassifierBaseSVM, kwargs), params, cv=args.cv_k)
-        
-        clf.fit(tweets, labels)
-        
-        print(clf.cv_results_)
-        
-        
-        """
-        # search for logistic regression best params. Default params are best
-        
-        params = {"C": [0.01,1,10], "tol": [1e-2, 1e-3, 1e-4, 1e-5, 1e-6]}
-        
-        clf = GridSearchCV(TweetClassifierLR(**kwargs_pre), params, cv=args.cv_k)
-        
-        clf.fit(tweets, labels)
-        
-        print(clf.cv_results_)
-        
-        print("mean test score", clf.cv_results_["mean_test_score"])
-        print(clf.best_estimator_)
-        print(clf.best_params_)
-        """
-        
-        sys.exit()
-        
-    scoring = ["f1_micro", "f1_macro", "precision_micro", "precision_macro", "recall_micro", "recall_macro"]
-    
-    f1_scores = cross_validate(clf, pos_tweets, labels, cv=args.cv_k, scoring=scoring, return_train_score=False)
-
-    
-    y_pred = cross_val_predict(clf, pos_tweets, labels, cv=args.cv_k)
-    
-    report = classification_report(labels, y_pred)
-    
-    text = []
-    text.append("classifier: {}\n".format(args.classifier))
-    text.append("dim reduction : {}\n\n".format(args.dim_reduction))
-    
-    text.append("cross val: {}-fold\n".format(args.cv_k))
-    
-    text.append("alt preprocess: {}\n\n".format(args.alt_preprocess))
-
-
-    
-    text.append("features\n")
-    text.append("bigrams: {}\n".format(args.bigrams))
-    text.append("cluster: {}\n".format(args.clusters))
-    text.append("postags: {}\n".format(args.postags))
-    text.append("postags bigrams: {}\n".format(args.postags_bg))
-    text.append("length: {}\n".format(args.length))
-    text.append("senti net: {}\n".format(args.sentnet))
-    text.append("senti words: {}\n".format(args.sentiwords))
-    text.append("subjective score: {}\n".format(args.subjscore))
-
-
-
-
-    text.append("\n")
-
-    for score_name, scores in f1_scores.items():
-        text.append("{} : {}, average: {}\n".format(score_name, scores, sum(scores)/args.cv_k))
-        
-    text.append(report)
-    
-    for line in text:
-        print(line)
-     
-        
-    # write text to file to keep a record of stuff
-    if args.save:
-        features = ""
-        if args.alt_preprocess:
-            features += "altpre-"
-        if args.bigrams:
-            features += "bigrams-"
-        if args.clusters:
-            features += "clusters-"
-        if args.postags:
-            features += "postags-"
-        if args.postags_bg:
-            features += "postagsbg-"
-        if args.length:
-            features += "length-"
-        if args.sentnet:
-            features += "sentnet-"
-        if args.sentiwords:
-            features += "sentiwords-"
-        if args.subjscore:
-            features += "subjscore-"
-               
-        if args.dim_reduction > 0:
-            features += "dim-{}-".format(args.dim_reduction)
-
-        if args.tfidf:
-            features = "tfidf-"
-        
-        cvk = "cvk-{}".format(args.cv_k)
-        filename = "{}-{}{}.txt".format(args.classifier, features, cvk)
-    
-        with open(filename, "w") as f:
-            f.writelines(text)
     
     
     
