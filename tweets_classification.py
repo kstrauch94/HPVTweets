@@ -1,30 +1,21 @@
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, ClusterMixin
 
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.pipeline import FeatureUnion
-from sklearn.preprocessing import FunctionTransformer
+
 from sklearn.pipeline import Pipeline
 
 from sklearn import svm
+from sklearn.model_selection import GridSearchCV,ShuffleSplit
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.decomposition import TruncatedSVD
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.metrics import accuracy_score
+from sklearn.base import BaseEstimator, ClassifierMixin, ClusterMixin
 
-import numpy as np
-
-from nltk.corpus import sentiwordnet as swn
-
-import io
-import random
-import os
 import copy
 
 UNRELATED = "Unrelated"
 NEG = "Neg"
+NEG_LABEL = "Negative"
 
 LABEL = "label"
 TWEET = "tweet"
@@ -33,7 +24,8 @@ NORMALIZED_LABEL = "normalized label"
 C = "C"
 GAMMA = "gamma"
 
-def process_tweets(tweets,labels):
+
+def process_tweets(tweets,labels,pipeline_steps):
   """
   Create dictionaries containing data for each level of classification
   
@@ -65,7 +57,7 @@ def process_tweets(tweets,labels):
       # add tweet to all dict
       _all[TWEET].append(tweet)
       _all[LABEL].append(label)
-      all[NORMALIZED_LABEL].append(label if label == UNRELATED else "Related")
+      _all[NORMALIZED_LABEL].append(label if label == UNRELATED else "Related")
       
       # add tweet to related if applicable
       if label != UNRELATED:
@@ -78,10 +70,146 @@ def process_tweets(tweets,labels):
           negative[TWEET].append(tweet)
           negative[LABEL].append(label)
           negative[NORMALIZED_LABEL].append(label)
-                 
+          
+  _all[TWEET] = pipeline_steps.fit_transform(_all[TWEET])
+  related[TWEET] = pipeline_steps.fit_transform(related[TWEET])
+  negative[TWEET] = pipeline_steps. fit_transform(negative[TWEET])   
+   
   return _all, related, negative
 
 
+class HierarchicalClassifier(BaseEstimator, ClassifierMixin):
+  """
+  Classifier for hierarchical classification task. Perform by level classification with 3 different classifier.
+  Use only within this contest (tweet classification with 3 levels)
+  """
+  
+  def __init__(self,clfs,params):
+    """
+    Construct new classifier object.
+    
+    :params:
+      clfs (list) : list of sklearn classifiers (initialized). E.g. [LogisticRegression(),SVC(),LinearSVC()]
+      params (list) : list of parameters of each classifier. Each list in `params` should contain dictionaries as <param_name> : [<values>]. See
+      `optimize_hp` for more detail.
+      
+    """
+    self.clfs = clfs
+    self.params = params
+    
+    
+  def get_by_level_data(self,X,y,level):
+    """
+    For each level of classfication retrieve correspondent feature matrix and create new set of labels
+    
+    :params:
+      X (scipy.sparse.csr) : original feature matrix
+      y (list) : original labels
+      level (int) : hierarchy (0,1,2)
+      
+    :return:
+      X_new (scipy.sparse.csr) : by level feature matrix
+      y_new (list) : by level labels (new) names
+      
+    For instance with `level = 1` only the samples with label Positive,Neutral,Neg.* are retrieved. Then the labels `Ǹeg.*`
+    are replaced with `Negative`
+    """
+    
+    if level == 0:
+      y_new = [label if label == "Unrelated" else "Related" for label in y]
+      X_new = X
+      
+    elif level == 1:
+      y_new = []
+      idx_X_new = []
+      for idx,label in enumerate(y):
+        if label != UNRELATED:
+          y_new.append(label if NEG not in label else NEG_LABEL)
+          idx_X_new.append(idx)
+      
+      X_new = X[idx_X_new]
+      
+    elif level == 2:
+      y_new = []
+      idx_X_new = []
+      for idx,label in enumerate(y):
+        if NEG in label:
+          y_new.append(label)
+          idx_X_new.append(idx)
+          
+      X_new = X[idx_X_new]
+
+    return X_new,y_new
+  
+  
+  def optimize_classifiers(self,X,y):
+    """
+    Optimize classifiers hyperparameters. See `optimize_hp`.
+    
+    :params:
+      X (scipy.sparse.csr) : original feature matrix
+      y (list) : original labels
+      
+    Replace classifiers in `self.clfs` with optimized ones
+    """
+    
+    best_f1s = []
+    
+    for idx,clf in enumerate(self.clfs):
+      X_new,y_new = self.get_by_level_data(X = X,y = y,level = idx)
+      best_f1, self.clfs[idx] = optimize_hp(clf = self.clfs[idx],X = X_new,y = y_new, params = self.params[idx])
+      best_f1s.append(best_f1)
+    
+    return best_f1s
+    
+    
+  def fit(self,X,y):
+    """
+    Fit data with 3 different classifiers
+    """
+    
+    for idx,clf in enumerate(self.clfs):
+      
+      X_new,y_new = self.get_by_level_data(X = X,y = y,level = idx)
+      
+      clf.fit(X_new,y_new)
+    
+    return self
+  
+  def predict(self, X):
+    """
+    Make by level predictions
+    """
+    
+    predictions = []
+    
+    for i in range(X.shape[0]):
+      tweet = X[i,:]
+      # predict with all to get related or unrelated
+      pred = self.clfs[0].predict(tweet)[0] # the zero is because the classifier return a list with 1 element
+      if pred == UNRELATED:
+          # if its unrelated we are done with this tweet
+          predictions.append(pred)
+          continue
+          
+      # if its related try to get next label
+      pred = self.clfs[1].predict(tweet)[0]
+      if NEG not in pred:
+          # if its not negative we are done with this tweet
+          predictions.append(pred)
+          continue
+          
+      # if its negative try to get specific label
+      pred = self.clfs[2].predict(tweet)[0]
+      predictions.append(pred)
+      
+    return predictions
+    
+  def score(self, tweets, labels):
+      preds = self.predict(tweets)
+
+      return accuracy_score(labels, preds)
+    
 
 class BaseClf(BaseEstimator, ClusterMixin):
 
@@ -100,7 +228,7 @@ class BaseClf(BaseEstimator, ClusterMixin):
         self._vectorizer = Pipeline(self._pipeline_steps)
         
         X = self._vectorizer.fit_transform(tweets)
-        print(X.shape)
+        print("Shape of the feature matrix to be fitted : {}".format(X.shape))
         
         self._clf = self.get_clf()
         
@@ -158,6 +286,7 @@ class TweetClassifierBaseSVM(BaseClf):
         
     def get_clf(self):
         return svm.SVC(C=self.C, gamma=self.GAMMA)
+
 
 
 class TweetClassifierH(BaseEstimator, ClassifierMixin):
@@ -234,3 +363,40 @@ class TweetClassifierH(BaseEstimator, ClassifierMixin):
 
         return accuracy_score(labels, preds)
 
+def optimize_hp(clf,X,y,params):
+  """
+  Optimize one classifier parameter at time. For each parameter:
+    - performs grid search (with train-test split for avoid training too many models), find best parameter value w.r.t. magro averaged f1 score
+    - instantiate new classifier with the found best parameter
+    - repeat
+    
+  :params:
+    
+    clf (sklearn classifier) : classifier to be optimized
+    X (scipy.sparse.csr_matrix or np.ndarray) : feature matrix
+    y ( np.ndarray) : labels vector
+    params (list) : list of dictionaries containing as key a parameter name and as value a list of possible parameters values. E.g.
+    params = [{'C' : [1,10,100]},{'gamma' : [2e-3,2e-4,2e-5]}]
+    random_state (int) : random seed for repruducibility
+    
+   :returns:
+     clf (sklearn classifier) : optimized classifier
+  """
+  best_f1 = 0
+  
+#  rs = ShuffleSplit(n_splits = 1, test_size = 0.33) # reproduce baseline
+  
+  for param in params:
+    
+#    gs = GridSearchCV(clf,param,refit = False,cv = rs,scoring = 'f1_micro') # reproduce baseline
+    
+    gs = GridSearchCV(clf,param,refit = False,scoring = 'f1_macro')  # 3 fold CV
+    gs.fit(X,y)
+    searched_param = list(param.keys())[0]
+    best_value = gs.best_params_[searched_param]
+    print("Best value for {} : {}".format(searched_param,best_value))
+    best_f1 = gs.best_score_
+    print("Best F1 macro {}".format(best_f1))
+    clf.set_params(**{searched_param : best_value})
+    
+  return best_f1,clf 

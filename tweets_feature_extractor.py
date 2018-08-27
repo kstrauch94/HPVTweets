@@ -155,7 +155,6 @@ def get_clusters(cluster_path, stem):
   :params:
     cluster_path (str) : path to tweet clusters
     stem (bool) : stem word if true
-    
   :returns:
     clusters (dict) : key = word, value = cluster
   """
@@ -367,7 +366,6 @@ def tweet_wordnet(tweets):
   :params:
     tweet (list) : list of lists of tokens
     stem (bool) : stem word if true
-    
   :return:
     sentinet synsets features (scipy.sparse.csr_matrix)
   """
@@ -400,10 +398,10 @@ def tweet_net_sentiment(tweet):
             
     return [pos, neg, obj]
     
-def net_sentiment(pos_tweet):
-    return np.array([tweet_net_sentiment(tw[1]) for tw in pos_tweet])
+def net_sentiment(tweets):
+    
+    return np.array([tweet_net_sentiment(tw) for tw in tweets])
       
-
 def tweet_score(tweet, score_lookup, score_type="both"):
     # score_type can be both, pos or neg
     score = 0
@@ -462,8 +460,7 @@ def get_sents_dependency(texts,deps,pos_vocab,neg_vocab):
     texts (list) : list of lists of tokens
     deps (list) : list of lists of dependencies
     pos_vocab (set) : set of positive words 
-    neg_vocab (set) : set of negative words
-    
+    neg_vocab (set) : set of negative words    
   :return:
     sentiment word features (scipy.sparse.csr_matrix)
     
@@ -504,7 +501,7 @@ def get_bigram_sentiments(bigrams_path, stem):
   :returns:
     bigram_sentiments (dict) : key = word, value = score
   """
-  
+
   bigram_sentiments = {"__dict_name__": "bigram sentiments"}
   # also doesnt work on windows without the encoding parameter
   with open(bigrams_path, encoding="utf-8") as infile:
@@ -529,6 +526,7 @@ def get_unigram_sentiments(unigrams_path, stem):
   """
   
   unigram_sentiments = {"__dict_name__": "unigram sentiments"}
+
   # also doesnt work on windows without the encoding parameter
   with open(unigrams_path, encoding="utf-8") as infile:
     for line in infile:
@@ -538,7 +536,6 @@ def get_unigram_sentiments(unigrams_path, stem):
       
   return unigram_sentiments
 
-   
 class RegexMatcher:
 
     def __init__(self, name):
