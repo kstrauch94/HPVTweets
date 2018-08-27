@@ -29,7 +29,7 @@ RBF_SVM_PARAMS = [{'gamma' : [2e-7, 2e-6, 2e-5, 2e-4, 2e-3]},{'C' : [1,64, 128, 
 LR_PARAMS = [{'C' : [1,64, 128, 256, 512, 1024]}]
 
 
-clf_choices = [L_SVM_B,RBF_SVM_B,L_SVM_H,RBF_SVM_H,LR_B,LR_H]
+clf_choices = [L_SVM_B, RBF_SVM_B, L_SVM_H, RBF_SVM_H, LR_B, LR_H]
 
 
 def parse_arguments():
@@ -69,12 +69,18 @@ def parse_arguments():
   features_group.add_argument("--sentnet", action="store_true", help="Senti net feature will be added to the vector")
   features_group.add_argument("--sentiwords", action="store_true", help="tokenizer function will build senti net words")
   features_group.add_argument("--subjscore", action="store_true", help="Subjectivity score feature will be added to the vector")
+  features_group.add_argument("--subjscorepos", action="store_true", help="Positive subjectivity score feature for will be added to the vector")
+  features_group.add_argument("--subjscoreneg", action="store_true", help="negative subjectivity score feature will be added to the vector")
   features_group.add_argument("--bingliusent", action="store_true", help="Positive/Negative words features from Bing Liu")
   features_group.add_argument("--depsent", action="store_true", help="Dependencies feature for Positive/Negative words from Bing Liu")
   features_group.add_argument("--negwords", action="store_true", help="Negated words features")
   features_group.add_argument("--scale", action="store_true", help="Scale feature matrix")
   features_group.add_argument("--bigramsent", action="store_true", help="Bigram sentiment score feature will be added to the vector")
+  features_group.add_argument("--bigramsentpos", action="store_true", help="Positive bigram sentiment score feature will be added to the vector")
+  features_group.add_argument("--bigramsentneg", action="store_true", help="Negative bigram sentiment score feature will be added to the vector")
   features_group.add_argument("--unigramsent", action="store_true", help="Unigram sentiment score feature will be added to the vector")
+  features_group.add_argument("--unigramsentpos", action="store_true", help="Positive unigram sentiment score feature will be added to the vector")
+  features_group.add_argument("--unigramsentneg", action="store_true", help="Negative unigram sentiment score feature will be added to the vector")
   features_group.add_argument("--argscores", action="store_true", help="Argument lexicon score features will be added to the vector")
 
 
@@ -150,11 +156,17 @@ if __name__ == "__main__":
                            do_postags = args.postags,
                            do_sentnet = args.sentnet,
                            do_subjscore = args.subjscore,
+                           do_subjscore_pos = args.subjscorepos,
+                           do_subjscore_neg = args.subjscoreneg,
                            do_dep_sent = args.depsent,
                            do_sentiwords = args.sentiwords,
                            do_scaling = args.scale,
                            do_bigram_sent = args.bigramsent,
+                           do_bigram_sent_pos = args.bigramsentpos,
+                           do_bigram_sent_neg = args.bigramsentneg,
                            do_unigram_sent = args.unigramsent,
+                           do_unigram_sent_pos = args.unigramsentpos,
+                           do_unigram_sent_neg = args.unigramsentneg,
                            do_argument_scores = args.argscores,
                            deps = deps, 
                            stem = args.stem,
@@ -172,6 +184,10 @@ if __name__ == "__main__":
   X = pipeline_steps.fit_transform(tweets) 
   
   print("Resulting feature matrix shape {}".format(X.shape))
+  
+  #import sys
+  #print("exiting")
+  #sys.exit(1)
   
   
   if args.optim_single:
@@ -261,12 +277,18 @@ if __name__ == "__main__":
   text.append("senti net: {}\n".format(args.sentnet))
   text.append("senti words: {}\n".format(args.sentiwords))
   text.append("subjective score: {}\n".format(args.subjscore))
+  text.append("pos subjective score: {}\n".format(args.subjscorepos))
+  text.append("neg subjective score: {}\n".format(args.subjscoreneg))
   text.append("bing liu sent words: {}\n".format(args.bingliusent))
   text.append("dependency sent words: {}\n".format(args.depsent))
   text.append("negated words: {}\n".format(args.negwords))
   text.append("scaled features: {}\n".format(args.scale))
   text.append("bigram sentiment scores: {}\n".format(args.bigramsent))
+  text.append("pos bigram sentiment scores: {}\n".format(args.bigramsentpos))
+  text.append("neg bigram sentiment scores: {}\n".format(args.bigramsentneg))
   text.append("unigram sentiment scores: {}\n".format(args.unigramsent))
+  text.append("pos unigram sentiment scores: {}\n".format(args.unigramsentpos))
+  text.append("neg unigram sentiment scores: {}\n".format(args.unigramsentneg))
   text.append("argument lexicon scores: {}\n".format(args.argscores))
 
   
