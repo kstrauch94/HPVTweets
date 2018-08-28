@@ -10,6 +10,8 @@ from sklearn.model_selection import cross_validate, cross_val_predict
 
 from sklearn.metrics import classification_report, confusion_matrix
 
+from sklearn.utils import shuffle
+
 import numpy as np
 import argparse
 import os
@@ -120,7 +122,7 @@ def parse_arguments():
   record_group.add_argument("--save", type = str, default = False, help="If true it writes a file with information about the test, else it just prints it")
   record_group.add_argument("--confusion-matrix",action = "store_true", help="Display confusion matrix")
   record_group.add_argument("--error-analysis", type = str, default = False, help="Save to a file (path to be provided) tweets misclassified")
-  
+  record_group.add_argument("--stat-test", type = str, default = False, help="Create score files for statistical significance test (paired t-test)")
   
   return parser.parse_args()
 
@@ -246,151 +248,174 @@ if __name__ == "__main__":
       
   scoring = ["f1_micro", "f1_macro", "precision_micro", "precision_macro", "recall_micro", "recall_macro"]
   
-  f1_scores = cross_validate(clf, X, labels, cv=10, scoring=scoring, return_train_score=False)
-
-  y_pred = cross_val_predict(clf, X, labels, cv=10)
-  
-  report = classification_report(labels, y_pred)
+  if args.stat_test:
+    
+    with open(args.stat_test, 'w+') as outfile:
       
-  text = []
-  text.append("classifier: {}\n".format(args.classifier))
-  text.append("class weights: {}\n".format(args.class_weights))
-  
-  store_hyperparameters(clf,text)
-  
-  text.append("\n10 fold cross validation\n")
-  
-  text.append("preprocessing\n")
-  text.append("remove url : {}\n".format(args.rm_url))
-  text.append("reduce length : {}\n".format(args.red_len))
-  text.append("lowercase : {}\n".format(args.lower))
-  text.append("remove stopwords : {}\n".format(args.rm_sw))
-  text.append("remove tags and mentions : {}\n".format(args.rm_tagsmen))
-  text.append("stem : {}\n".format(args.stem))
-  
-  text.append("features\n")
-  text.append("ngram_range: {}\n".format(args.ngram_range))
-  text.append("tfidf: {}\n".format(args.tfidf))
-  text.append("tsvd : {}\n\n".format(args.tsvd))
-  text.append("cluster: {}\n".format(args.clusters))
-  text.append("postags: {}\n".format(args.postags))
-  text.append("senti net: {}\n".format(args.sentnet))
-  text.append("senti words: {}\n".format(args.sentiwords))
-  text.append("subjective score: {}\n".format(args.subjscore))
-  text.append("pos subjective score: {}\n".format(args.subjscorepos))
-  text.append("neg subjective score: {}\n".format(args.subjscoreneg))
-  text.append("bing liu sent words: {}\n".format(args.bingliusent))
-  text.append("dependency sent words: {}\n".format(args.depsent))
-  text.append("negated words: {}\n".format(args.negwords))
-  text.append("scaled features: {}\n".format(args.scale))
-  text.append("bigram sentiment scores: {}\n".format(args.bigramsent))
-  text.append("pos bigram sentiment scores: {}\n".format(args.bigramsentpos))
-  text.append("neg bigram sentiment scores: {}\n".format(args.bigramsentneg))
-  text.append("unigram sentiment scores: {}\n".format(args.unigramsent))
-  text.append("pos unigram sentiment scores: {}\n".format(args.unigramsentpos))
-  text.append("neg unigram sentiment scores: {}\n".format(args.unigramsentneg))
-  text.append("argument lexicon scores: {}\n".format(args.argscores))
-
-  
-  text.append("Feature matrix shape: {}\n".format(X.shape))
-
-  text.append("\n")
+      if 'baseline' in args.stat_test:
+        
+        print("Set basline parameters")
+        
+        clf.clfs[0].C = 64
+        clf.clfs[0].gamma = 2e-3
+        
+        clf.clfs[1].C = 256
+        clf.clfs[1].gamma = 2e-3
+        
+        clf.clfs[2].C = 512
+        clf.clfs[2].gamma = 2e-3
       
-  for score_name, scores in f1_scores.items():
-      text.append("average {} : {}\n".format(score_name,sum(scores)/len(scores)))
+      for i in range(10):
+        
+        X,labels= shuffle(X,labels, random_state = i)
+        
+        f1_scores = cross_validate(clf, X, labels, cv=10, scoring=scoring, return_train_score=False)
+                
+        for score_name,scores in f1_scores.items():
+          
+          if score_name == 'test_f1_macro':
+            
+            for score in scores:
+              
+              outfile.write("{}\n".format(score))
+              
+  else:
+            
+            
       
-  text.append(report)
+    f1_scores = cross_validate(clf, X, labels, cv=10, scoring=scoring, return_train_score=False)
   
-  for line in text:
-      print(line)
+    y_pred = cross_val_predict(clf, X, labels, cv=10)
+    
+    report = classification_report(labels, y_pred)
+        
+    text = []
+    text.append("classifier: {}\n".format(args.classifier))
+    text.append("class weights: {}\n".format(args.class_weights))
+    
+    store_hyperparameters(clf,text)
+    
+    text.append("\n10 fold cross validation\n")
+    
+    text.append("preprocessing\n")
+    text.append("remove url : {}\n".format(args.rm_url))
+    text.append("reduce length : {}\n".format(args.red_len))
+    text.append("lowercase : {}\n".format(args.lower))
+    text.append("remove stopwords : {}\n".format(args.rm_sw))
+    text.append("remove tags and mentions : {}\n".format(args.rm_tagsmen))
+    text.append("stem : {}\n".format(args.stem))
+    
+    text.append("features\n")
+    text.append("ngram_range: {}\n".format(args.ngram_range))
+    text.append("tfidf: {}\n".format(args.tfidf))
+    text.append("tsvd : {}\n\n".format(args.tsvd))
+    text.append("cluster: {}\n".format(args.clusters))
+    text.append("postags: {}\n".format(args.postags))
+    text.append("senti net: {}\n".format(args.sentnet))
+    text.append("senti words: {}\n".format(args.sentiwords))
+    text.append("subjective score: {}\n".format(args.subjscore))
+    text.append("pos subjective score: {}\n".format(args.subjscorepos))
+    text.append("neg subjective score: {}\n".format(args.subjscoreneg))
+    text.append("bing liu sent words: {}\n".format(args.bingliusent))
+    text.append("dependency sent words: {}\n".format(args.depsent))
+    text.append("negated words: {}\n".format(args.negwords))
+    text.append("scaled features: {}\n".format(args.scale))
+    text.append("bigram sentiment scores: {}\n".format(args.bigramsent))
+    text.append("pos bigram sentiment scores: {}\n".format(args.bigramsentpos))
+    text.append("neg bigram sentiment scores: {}\n".format(args.bigramsentneg))
+    text.append("unigram sentiment scores: {}\n".format(args.unigramsent))
+    text.append("pos unigram sentiment scores: {}\n".format(args.unigramsentpos))
+    text.append("neg unigram sentiment scores: {}\n".format(args.unigramsentneg))
+    text.append("argument lexicon scores: {}\n".format(args.argscores))
+  
+    
+    text.append("Feature matrix shape: {}\n".format(X.shape))
+  
+    text.append("\n")
+        
+    for score_name, scores in f1_scores.items():
+        text.append("average {} : {}\n".format(score_name,sum(scores)/len(scores)))
+        
+    text.append(report)
+    
+    for line in text:
+        print(line)
+     
+        
+    # write text to file to keep a record of stuff
+    if args.save:
+      preprocess = "rm"
+      if args.rm_url:
+        preprocess += "-url"
+      if args.rm_sw:
+        preprocess += "-sw"
+      if args.rm_tagsmen:
+        preprocess += "-tm"
+      if args.stem: 
+        preprocess += "-stem"
    
+      features = ""
+      features += "{}gram-".format(args.ngram_range)
+      if args.tfidf:
+          features = "tfidf-"
+      if args.tsvd > 0:
+          features += "tsvd-{}-".format(args.tsvd)
+      if args.clusters:
+          features += "clusters-"
+      if args.postags:
+          features += "postags-"
+      if args.sentnet:
+          features += "sentnet-"
+      if args.sentiwords:
+          features += "sentiwords-"
+      if args.subjscore:
+          features += "subjscore-"
+      if args.bingliusent:
+          features += "bingliu-"
+      if args.depsent:
+          features += "dep-"
+      if args.negwords:
+          features += "neg-"
+      if args.scale:
+          features += "scale-"
+      if args.optim_single:
+          features += "optim-"
+      if args.bigramsent:
+          features += "bigramsent-"
+      if args.unigramsent:
+          features += "unigramsent-"
+      if args.argscores:
+          features += "argscores-"
       
-  # write text to file to keep a record of stuff
-  if args.save:
-    preprocess = "rm"
-    if args.rm_url:
-      preprocess += "-url"
-    if args.rm_sw:
-      preprocess += "-sw"
-    if args.rm_tagsmen:
-      preprocess += "-tm"
-    if args.stem: 
-      preprocess += "-stem"
- 
-    features = ""
-    features += "{}gram-".format(args.ngram_range)
-    if args.tfidf:
-        features = "tfidf-"
-    if args.tsvd > 0:
-        features += "tsvd-{}-".format(args.tsvd)
-    if args.clusters:
-        features += "clusters-"
-    if args.postags:
-        features += "postags-"
-    if args.sentnet:
-        features += "sentnet-"
-    if args.sentiwords:
-        features += "sentiwords-"
-    if args.subjscore:
-        features += "subjscore-"
-    if args.subjscorepos:
-        features += "subjscorepos-"
-    if args.subjscoreneg:
-        features += "subjscoreneg-"
-    if args.bingliusent:
-        features += "bingliu-"
-    if args.depsent:
-        features += "dep-"
-    if args.negwords:
-        features += "neg-"
-    if args.scale:
-        features += "scale-"
-    if args.optim_single:
-        features += "optim-"
-    if args.bigramsent:
-        features += "bigramsent-"
-    if args.bigramsentpos:
-        features += "bigramsentpos-"
-    if args.bigramsentneg:
-        features += "bigramsentneg-"
-    if args.unigramsent:
-        features += "unigramsent-"
-    if args.unigramsentpos:
-        features += "unigramsentpos-"
-    if args.unigramsentneg:
-        features += "unigramsentneg-"
-    if args.argscores:
-        features += "argscores-"
+      filename = "{}_{}_{}10cv.txt".format(args.classifier,preprocess,features)
+      
+      if not os.path.exists(args.save):
+        os.mkdir(args.save)
+      
+      with open(os.path.join(args.save,filename), "w") as f:
+          f.writelines(text)
+          
+    if args.confusion_matrix:
     
-    filename = "{}_{}_{}10cv.txt".format(args.classifier,preprocess,features)
+      cm = confusion_matrix(labels,y_pred)
+      np.set_printoptions(precision=2)
+      plt.figure()
+      plot_confusion_matrix(cm, classes=np.unique(labels),
+                        title='Confusion Matrix')
+      
+      
+      plt.savefig('confustion_matrix.png')
+      
+    if args.error_analysis:
+      
+      if not os.path.exists(args.error_analysis):
+        os.mkdir(args.error_analysis)
+      
+      by_class_error_analysis(df = df, y_true = labels, y_pred = y_pred, limit = 10, error = 'FP', out_path = args.error_analysis )
+      by_class_error_analysis(df = df, y_true = labels, y_pred = y_pred, limit = 10, error = 'FN', out_path = args.error_analysis )
+      
     
-    if not os.path.exists(args.save):
-      os.mkdir(args.save)
-    
-    with open(os.path.join(args.save,filename), "w") as f:
-        f.writelines(text)
-        
-  if args.confusion_matrix:
-  
-    cm = confusion_matrix(labels,y_pred)
-    np.set_printoptions(precision=2)
-    plt.figure()
-    plot_confusion_matrix(cm, classes=np.unique(labels),
-                      title='Confusion Matrix')
-    
-    
-    plt.savefig('confustion_matrix.png')
-    
-  if args.error_analysis:
-    
-    if not os.path.exists(args.error_analysis):
-      os.mkdir(args.error_analysis)
-    
-    by_class_error_analysis(df = df, y_true = labels, y_pred = y_pred, limit = 10, error = 'FP', out_path = args.error_analysis )
-    by_class_error_analysis(df = df, y_true = labels, y_pred = y_pred, limit = 10, error = 'FN', out_path = args.error_analysis )
-    
-  
-        
+          
 
     
     
