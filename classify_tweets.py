@@ -333,6 +333,10 @@ if __name__ == "__main__":
         features += "sentiwords-"
     if args.subjscore:
         features += "subjscore-"
+    if args.subjscorepos:
+        features += "subjscorepos-"
+    if args.subjscoreneg:
+        features += "subjscoreneg-"
     if args.bingliusent:
         features += "bingliu-"
     if args.depsent:
@@ -345,8 +349,16 @@ if __name__ == "__main__":
         features += "optim-"
     if args.bigramsent:
         features += "bigramsent-"
+    if args.bigramsentpos:
+        features += "bigramsentpos-"
+    if args.bigramsentneg:
+        features += "bigramsentneg-"
     if args.unigramsent:
         features += "unigramsent-"
+    if args.unigramsentpos:
+        features += "unigramsentpos-"
+    if args.unigramsentneg:
+        features += "unigramsentneg-"
     if args.argscores:
         features += "argscores-"
     
